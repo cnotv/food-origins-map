@@ -1,0 +1,332 @@
+{
+  "tomato": {
+    "file": "Bright red tomato and cross section02.jpg",
+    "artist": "fir0002  flagstaffotos [at] gmail.com\n\t\tCanon 20D + Sigma 150mm f/2.8",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/8/88/Bright_red_tomato_and_cross_section02.jpg"
+  },
+  "potato": {
+    "file": "Patates.jpg",
+    "artist": "Scott Bauer, USDA ARS",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Patates.jpg"
+  },
+  "maize": {
+    "file": "Corncobs.jpg",
+    "artist": "User:Asbestos",
+    "license": "CC BY-SA 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/7d/Corncobs.jpg"
+  },
+  "chili-pepper": {
+    "file": "Capsicum annuum-Red Chilli Pepper 01.jpg",
+    "artist": "Sabina Bajracharya",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Capsicum_annuum-Red_Chilli_Pepper_01.jpg"
+  },
+  "avocado": {
+    "file": "Persea americana fruit 2.JPG",
+    "artist": "B.navez",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Persea_americana_fruit_2.JPG"
+  },
+  "common-bean": {
+    "file": "Kidney beans (Phaseolus vulgaris) marketed Baubau.jpg",
+    "artist": "David E Mead",
+    "license": "CC0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/64/Kidney_beans_%28Phaseolus_vulgaris%29_marketed_Baubau.jpg"
+  },
+  "cacao": {
+    "file": "Cacao-pod-k4636-14.jpg",
+    "artist": "Keith Weller, USDA ARS",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/0/01/Cacao-pod-k4636-14.jpg"
+  },
+  "pineapple": {
+    "file": "Pineapple and cross section.jpg",
+    "artist": "fir0002  flagstaffotos [at] gmail.com\n\t\tCanon 20D + Sigma 150mm f/2.8",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Pineapple_and_cross_section.jpg"
+  },
+  "peanut": {
+    "file": "Peanut 9417.jpg",
+    "artist": "Pollinator",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/4/4a/Peanut_9417.jpg"
+  },
+  "cassava": {
+    "file": "Manihot esculenta, Cassava root - Flickr - Dick Culbert.jpg",
+    "artist": "Dick Culbert from Gibsons, B.C., Canada",
+    "license": "CC BY 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/0/01/Manihot_esculenta%2C_Cassava_root_-_Flickr_-_Dick_Culbert.jpg"
+  },
+  "sunflower": {
+    "file": "Sunflower sky backdrop.jpg",
+    "artist": "Fir0002",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/4/40/Sunflower_sky_backdrop.jpg"
+  },
+  "blueberry": {
+    "file": "Blueberries.jpg",
+    "artist": "Unknown",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/1/15/Blueberries.jpg"
+  },
+  "cranberry": {
+    "file": "Cranberries20101210.jpg",
+    "artist": "Cjboffoli",
+    "license": "CC BY 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/4/45/Cranberries20101210.jpg"
+  },
+  "pumpkin": {
+    "file": "Pumpkins.jpg",
+    "artist": "Martin Doege (Morn), uploaded to English WP on 2003-08-21",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/9/99/Pumpkins.jpg"
+  },
+  "wheat": {
+    "file": "Wheat close-up.JPG",
+    "artist": "User:Bluemoose",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/b/b4/Wheat_close-up.JPG"
+  },
+  "barley": {
+    "file": "Barley.jpg",
+    "artist": "Unknown",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Barley.jpg"
+  },
+  "lentil": {
+    "file": "3 types of lentil.jpg",
+    "artist": "User:Justinc",
+    "license": "CC BY-SA 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/d/da/3_types_of_lentil.jpg"
+  },
+  "chickpea": {
+    "file": "Chickpea BNC.jpg",
+    "artist": "Prathyush Thomas",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/8/89/Chickpea_BNC.jpg"
+  },
+  "pea": {
+    "file": "Peas in pods - Studio.jpg",
+    "artist": "Bill Ebbesen",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/1/11/Peas_in_pods_-_Studio.jpg"
+  },
+  "fig": {
+    "file": "Figs.jpg",
+    "artist": "Eric Hunt",
+    "license": "CC BY-SA 2.5",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/78/Figs.jpg"
+  },
+  "olive": {
+    "file": "Olives in bowl.jpg",
+    "artist": "Gphoto",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/64/Olives_in_bowl.jpg"
+  },
+  "date-palm": {
+    "file": "Dates on date palm.jpg",
+    "artist": "Unknown",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/1/17/Dates_on_date_palm.jpg"
+  },
+  "pomegranate": {
+    "file": "Pomegranate fruit.jpg",
+    "artist": "fir0002  flagstaffotos [at] gmail.com\n\t\tCanon 20D + Tamron 28-75mm f/2.8",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/6b/Pomegranate_fruit.jpg"
+  },
+  "almond": {
+    "file": "Almond.jpg",
+    "artist": "E. Bailey",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Almond.jpg"
+  },
+  "carrot": {
+    "file": "Carrots of many colors.jpg",
+    "artist": "Stephen Ausmus",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/3/32/Carrots_of_many_colors.jpg"
+  },
+  "spinach": {
+    "file": "Spinach leaves.jpg",
+    "artist": "Nillerdk",
+    "license": "CC BY 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Spinach_leaves.jpg"
+  },
+  "apple": {
+    "file": "Red Apple.jpg",
+    "artist": "Abhijit Tembhekar from Mumbai, India",
+    "license": "CC BY 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/1/15/Red_Apple.jpg"
+  },
+  "walnut": {
+    "file": "Whole walnut kernel and shell.jpg",
+    "artist": "Potkettle",
+    "license": "CC BY 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/69/Whole_walnut_kernel_and_shell.jpg"
+  },
+  "apricot": {
+    "file": "Apricots.jpg",
+    "artist": "Fir0002",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Apricots.jpg"
+  },
+  "onion": {
+    "file": "Onion on White.JPG",
+    "artist": "Colin",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/2/25/Onion_on_White.JPG"
+  },
+  "garlic": {
+    "file": "Garlic.jpg",
+    "artist": "Donovan Govan.",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/2/22/Garlic.jpg"
+  },
+  "rice": {
+    "file": "White, Brown, Red & Wild rice.jpg",
+    "artist": "Earth100",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/7b/White%2C_Brown%2C_Red_%26_Wild_rice.jpg"
+  },
+  "soybean": {
+    "file": "Soybeans.jpg",
+    "artist": "Unknown",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Soybeans.jpg"
+  },
+  "peach": {
+    "file": "Autumn Red peaches.jpg",
+    "artist": "Jack Dykinga, USDA",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/9/9e/Autumn_Red_peaches.jpg"
+  },
+  "tea": {
+    "file": "Jakseol green tea leaves 2.jpg",
+    "artist": "예향",
+    "license": "CC BY 2.0 kr",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/1/1c/Jakseol_green_tea_leaves_2.jpg"
+  },
+  "orange": {
+    "file": "Orange-Fruit-Pieces.jpg",
+    "artist": "Evan-Amos",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Orange-Fruit-Pieces.jpg"
+  },
+  "cucumber": {
+    "file": "Cucumber and cross section.jpg",
+    "artist": "fir0002  flagstaffotos [at] gmail.com\n\t\tCanon 20D + Sigma 150mm f/2.8",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/e/ed/Cucumber_and_cross_section.jpg"
+  },
+  "eggplant": {
+    "file": "Solanum melongena 24 08 2012 (1).JPG",
+    "artist": "Joydeep",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/76/Solanum_melongena_24_08_2012_%281%29.JPG"
+  },
+  "black-pepper": {
+    "file": "Black peppercorns gn.jpg",
+    "artist": "Gnangcomapp",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/b/b5/Black_peppercorns_gn.jpg"
+  },
+  "mango": {
+    "file": "Mango - single.jpg",
+    "artist": "Ivar Leidus",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/4/49/Mango_-_single.jpg"
+  },
+  "banana": {
+    "file": "Banana and cross section.jpg",
+    "artist": "fir0002  flagstaffotos [at] gmail.com\n\t\tCanon 20D + Sigma 150mm f/2.8",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Banana_and_cross_section.jpg"
+  },
+  "sugarcane": {
+    "file": "Sugarcane.jpg",
+    "artist": "Chepetoño",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/2/20/Sugarcane.jpg"
+  },
+  "taro": {
+    "file": "Taro root (taro corm).jpg",
+    "artist": "Susan Slater",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Taro_root_%28taro_corm%29.jpg"
+  },
+  "coconut": {
+    "file": "Coconut and oil.jpg",
+    "artist": "Phu Thinh Co",
+    "license": "CC BY-SA 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Coconut_and_oil.jpg"
+  },
+  "ginger": {
+    "file": "Ginger.jpg",
+    "artist": "authorised by owner Patrick Spieseke (via User:César)",
+    "license": "CC BY-SA 2.5",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/2/23/Ginger.jpg"
+  },
+  "turmeric": {
+    "file": "Turmeric-powder.jpg",
+    "artist": "Sanjay Acharya",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/0/0a/Turmeric-powder.jpg"
+  },
+  "coffee": {
+    "file": "Roasted coffee beans.jpg",
+    "artist": "MarkSweep",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Roasted_coffee_beans.jpg"
+  },
+  "okra": {
+    "file": "Abelmoschus esculentus Okra.jpg",
+    "artist": "Prof Ranga Sai",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/e/e5/Abelmoschus_esculentus_Okra.jpg"
+  },
+  "sorghum": {
+    "file": "Sorghum bicolor03.jpg",
+    "artist": "No machine-readable author provided. Pethan assumed (based on copyright claims).",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/8/84/Sorghum_bicolor03.jpg"
+  },
+  "watermelon": {
+    "file": "Watermelon cross BNC.jpg",
+    "artist": "Prathyush Thomas",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Watermelon_cross_BNC.jpg"
+  },
+  "yam": {
+    "file": "Dioscorea alata - Purple yam tuber - Mindanao, Philippines.jpg",
+    "artist": "Obsidian Soul",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Dioscorea_alata_-_Purple_yam_tuber_-_Mindanao%2C_Philippines.jpg"
+  },
+  "cowpea": {
+    "file": "Seeds of Vigna unguiculata.jpg",
+    "artist": "Gaurav Dhwaj Khadka",
+    "license": "CC BY 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Seeds_of_Vigna_unguiculata.jpg"
+  },
+  "grape": {
+    "file": "Table grapes on white.jpg",
+    "artist": "fir0002  flagstaffotos [at] gmail.com\n\t\tCanon 20D + Sigma 150mm f/2.8",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Table_grapes_on_white.jpg"
+  },
+  "cabbage": {
+    "file": "Cabbage and cross section on white.jpg",
+    "artist": "fir0002  flagstaffotos [at] gmail.com\n\t\tCanon 20D + Sigma 150mm f/2.8",
+    "license": "GFDL 1.2",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Cabbage_and_cross_section_on_white.jpg"
+  },
+  "leek": {
+    "file": "Leeks.jpg",
+    "artist": "https://www.flickr.com/photos/calliope/",
+    "license": "CC BY 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/2/23/Leeks.jpg"
+  }
+}
