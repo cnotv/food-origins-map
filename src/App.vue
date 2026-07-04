@@ -19,6 +19,26 @@ const onSearchSelect = (item: ProduceItem) => {
   selected.value = item
 }
 
+// GitHub's new-issue form pre-filled with the current app state.
+// A static client can't create issues directly without exposing a token,
+// so the user confirms with one click on GitHub.
+const ISSUES_URL = 'https://github.com/cnotv/food-origins-map/issues/new'
+const bugReportUrl = computed(() => {
+  const body = [
+    '**Describe the bug**',
+    '',
+    '',
+    '---',
+    '_App state when reported:_',
+    `- Filter: ${activeFilter.value}`,
+    `- Selected item: ${selected.value?.name ?? 'none'}`,
+    `- Search open: ${searchOpen.value}`,
+    `- User agent: ${navigator.userAgent}`,
+  ].join('\n')
+  const params = new URLSearchParams({ title: '[Bug] ', labels: 'bug', body })
+  return `${ISSUES_URL}?${params}`
+})
+
 const onKey = (e: KeyboardEvent) => {
   if (e.key !== 'Escape') return
   // Close the topmost overlay first: detail panel, then search.
@@ -41,6 +61,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       >
         🔍 Search
       </button>
+      <a class="bug-link" :href="bugReportUrl" target="_blank" rel="noopener">bugs?</a>
     </header>
     <WorldMap
       :items="filteredItems"
@@ -58,11 +79,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   </div>
 </template>
 <style scoped>
-.app-shell { position: absolute; inset: 0; }
+.app-shell { position: absolute; inset: 0; display: flex; flex-direction: column; }
 .topbar {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 900;
+  flex: none; z-index: 900;
   display: flex; align-items: center; gap: 16px; padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.92); box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  background: #fff; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
 }
 .topbar h1 { font-size: 18px; margin: 0; white-space: nowrap; }
 .search-toggle {
@@ -71,8 +92,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   white-space: nowrap;
 }
 .search-toggle.active { background: #333; color: #fff; border-color: #333; }
+.bug-link { flex: none; font-size: 13px; color: #666; }
+.bug-link:hover { color: #333; }
 @media (max-width: 640px) {
-  .topbar { flex-direction: column; align-items: stretch; gap: 8px; }
-  .search-toggle { margin-left: 0; }
+  .topbar { flex-wrap: wrap; gap: 8px; }
+  .topbar h1 { flex: 1; }
+  .bug-link { order: 2; }
+  /* Scoped styles reach the FilterChips root element. */
+  .topbar .chips-row { order: 3; flex-basis: 100%; }
+  .search-toggle { margin-left: 0; order: 4; flex-basis: 100%; }
 }
 </style>

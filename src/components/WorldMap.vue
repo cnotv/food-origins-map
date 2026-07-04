@@ -98,9 +98,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-.world-map { position: absolute; inset: 0; }
-/* Push Leaflet's top-left zoom control clear of the fixed topbar. */
-.leaflet-top .leaflet-control { margin-top: 60px; }
+/* Fills the space left below the topbar in the app-shell flex column. */
+.world-map { position: relative; flex: 1; min-height: 0; }
 .marker-badge {
   width: 40px; height: 40px; border-radius: 50%; border: 3px solid;
   overflow: hidden; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
