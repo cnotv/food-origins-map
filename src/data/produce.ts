@@ -1,9 +1,12 @@
 import type { ProduceItem } from './types'
+import { produceExtra } from './produce-extra'
 
 // Each item is pinned at the historically-cited center of domestication.
 // Nutrition is per 100 g of the raw edible portion (approximate, USDA-style).
 // commonsFile is a real Wikimedia Commons filename validated by the image pipeline.
-export const produce: ProduceItem[] = [
+// `curated` holds the original hand-written entries; the bulk expansion lives in
+// produce-extra.ts and is concatenated below to form the exported dataset.
+const curated: ProduceItem[] = [
   {
     id: 'tomato',
     name: 'Tomato',
@@ -46,7 +49,7 @@ export const produce: ProduceItem[] = [
       'Chili peppers were domesticated in Mexico at least 6,000 years ago and were one of the first cultivated crops in the Americas. Columbian trade carried them across the globe, transforming cuisines from India to Sichuan.',
     nutrition: { per100g: { calories: 40, carbs: 9, fiber: 1.5, protein: 1.9 }, highlights: ['Capsaicin', 'Vitamin C'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/chili-pepper',
-    commonsFile: 'Capsicum annuum Habanero.jpg',
+    commonsFile: 'Capsicum annuum-Red Chilli Pepper 01.jpg',
   },
   {
     id: 'avocado',
@@ -68,7 +71,7 @@ export const produce: ProduceItem[] = [
       'The common bean was domesticated independently in Mesoamerica and the Andes. It became one of the "Three Sisters" grown alongside maize and squash across the Americas.',
     nutrition: { per100g: { calories: 127, carbs: 23, fiber: 6.4, protein: 8.7 }, highlights: ['Plant protein', 'Fiber', 'Iron'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/beans',
-    commonsFile: 'Frijoles negros.jpg',
+    commonsFile: 'Kidney beans (Phaseolus vulgaris) marketed Baubau.jpg',
   },
   {
     id: 'cacao',
@@ -112,7 +115,7 @@ export const produce: ProduceItem[] = [
       'Cassava was domesticated in the southern Amazon basin of Brazil and became a dietary cornerstone across tropical South America thanks to its hardy, starchy roots.',
     nutrition: { per100g: { calories: 160, carbs: 38, fiber: 1.8, protein: 1.4 }, highlights: ['Resistant starch', 'Vitamin C'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/cassava',
-    commonsFile: 'Cassava root.jpg',
+    commonsFile: 'Manihot esculenta, Cassava root - Flickr - Dick Culbert.jpg',
   },
   {
     id: 'sunflower',
@@ -189,7 +192,7 @@ export const produce: ProduceItem[] = [
       'Lentils are among the oldest domesticated crops, cultivated in the Near East around 8,000 BCE. They spread with early farming into Europe, Asia, and North Africa.',
     nutrition: { per100g: { calories: 116, carbs: 20, fiber: 7.9, protein: 9 }, highlights: ['Protein', 'Folate', 'Iron'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/lentils',
-    commonsFile: 'Lentils.jpg',
+    commonsFile: '3 types of lentil.jpg',
   },
   {
     id: 'chickpea',
@@ -200,7 +203,7 @@ export const produce: ProduceItem[] = [
       'The chickpea was domesticated in southeastern Anatolia roughly 10,000 years ago and became a foundation of Mediterranean, Middle Eastern, and South Asian cooking.',
     nutrition: { per100g: { calories: 164, carbs: 27, fiber: 7.6, protein: 8.9 }, highlights: ['Protein', 'Fiber', 'Folate'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/chickpeas',
-    commonsFile: 'Chickpeas.jpg',
+    commonsFile: 'Chickpea BNC.jpg',
   },
   {
     id: 'pea',
@@ -233,7 +236,7 @@ export const produce: ProduceItem[] = [
       'Olives were domesticated in the eastern Mediterranean around 6,000 years ago. Olive oil became central to the economies and cuisines of the ancient Mediterranean world.',
     nutrition: { per100g: { calories: 115, carbs: 6, fiber: 3.2, protein: 0.8 }, highlights: ['Monounsaturated fats', 'Vitamin E'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/olives',
-    commonsFile: 'Olives in a bowl.jpg',
+    commonsFile: 'Olives in bowl.jpg',
   },
   {
     id: 'date-palm',
@@ -288,7 +291,7 @@ export const produce: ProduceItem[] = [
       'Spinach was first cultivated in ancient Persia and reached China via Nepal in the 7th century, later spreading to the Mediterranean and Europe by the Middle Ages.',
     nutrition: { per100g: { calories: 23, carbs: 3.6, fiber: 2.2, protein: 2.9 }, highlights: ['Iron', 'Vitamin K', 'Folate'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/spinach',
-    commonsFile: 'Spinacia oleracea Spinach leaves.jpg',
+    commonsFile: 'Spinach leaves.jpg',
   },
   {
     id: 'apple',
@@ -310,7 +313,7 @@ export const produce: ProduceItem[] = [
       'The Persian or English walnut spread from the ancient walnut forests of Central Asia along trade routes, prized since antiquity for its rich, oily kernels.',
     nutrition: { per100g: { calories: 654, carbs: 14, fiber: 6.7, protein: 15 }, highlights: ['Omega-3 fats', 'Antioxidants', 'Copper'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/walnut',
-    commonsFile: 'Walnuts - whole and cross section.jpg',
+    commonsFile: 'Whole walnut kernel and shell.jpg',
   },
   {
     id: 'apricot',
@@ -387,7 +390,7 @@ export const produce: ProduceItem[] = [
       'The tea plant (Camellia sinensis) was first cultivated in southwestern China. Ancient tea trees still grow in Yunnan, the cradle of the world’s most consumed beverage after water.',
     nutrition: { per100g: { calories: 1, carbs: 0.3, fiber: 0, protein: 0 }, highlights: ['Catechins', 'L-theanine', 'Antioxidants'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/tea',
-    commonsFile: 'Tea leaves steeping in a zhong 亓 gaiwan.jpg',
+    commonsFile: 'Jakseol green tea leaves 2.jpg',
   },
   {
     id: 'orange',
@@ -431,7 +434,7 @@ export const produce: ProduceItem[] = [
       'Black pepper is native to the Western Ghats of India and was so valuable in antiquity that it drove Roman trade with India and, later, European voyages of exploration.',
     nutrition: { per100g: { calories: 251, carbs: 64, fiber: 25, protein: 10 }, highlights: ['Piperine', 'Manganese', 'Vitamin K'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/black-pepper',
-    commonsFile: 'Pepper (Piper nigrum) fruits.jpg',
+    commonsFile: 'Black peppercorns gn.jpg',
   },
   {
     id: 'mango',
@@ -475,7 +478,7 @@ export const produce: ProduceItem[] = [
       'Taro is one of the oldest cultivated crops, grown across Island Southeast Asia and carried by seafarers throughout the Pacific, where it remains a staple.',
     nutrition: { per100g: { calories: 112, carbs: 26, fiber: 4.1, protein: 1.5 }, highlights: ['Fiber', 'Potassium', 'Resistant starch'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/taro',
-    commonsFile: 'Taro corm.jpg',
+    commonsFile: 'Taro root (taro corm).jpg',
   },
   {
     id: 'coconut',
@@ -530,7 +533,7 @@ export const produce: ProduceItem[] = [
       'Okra was domesticated in the highlands of Ethiopia and East Africa and carried through the Sahara and across the Atlantic, becoming a staple of many warm-climate cuisines.',
     nutrition: { per100g: { calories: 33, carbs: 7, fiber: 3.2, protein: 1.9 }, highlights: ['Fiber', 'Vitamin K', 'Folate'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/okra',
-    commonsFile: 'Okra pods.jpg',
+    commonsFile: 'Abelmoschus esculentus Okra.jpg',
   },
   {
     id: 'sorghum',
@@ -563,7 +566,7 @@ export const produce: ProduceItem[] = [
       'Yams were independently domesticated in West Africa and are central to the region’s food culture, celebrated in harvest festivals across Nigeria and Ghana.',
     nutrition: { per100g: { calories: 118, carbs: 28, fiber: 4.1, protein: 1.5 }, highlights: ['Complex carbs', 'Potassium', 'Vitamin C'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/yam',
-    commonsFile: 'Dioscorea alata tubers.jpg',
+    commonsFile: 'Dioscorea alata - Purple yam tuber - Mindanao, Philippines.jpg',
   },
   {
     id: 'cowpea',
@@ -574,7 +577,7 @@ export const produce: ProduceItem[] = [
       'The cowpea was domesticated in West Africa and is a hardy, protein-rich legume that spread through Africa, Asia, and the Americas via the transatlantic trade.',
     nutrition: { per100g: { calories: 116, carbs: 21, fiber: 6.5, protein: 8 }, highlights: ['Protein', 'Folate', 'Fiber'] },
     tasteAtlasUrl: 'https://www.tasteatlas.com/black-eyed-peas',
-    commonsFile: 'Black-eyed peas.jpg',
+    commonsFile: 'Seeds of Vigna unguiculata.jpg',
   },
   {
     id: 'grape',
@@ -610,3 +613,5 @@ export const produce: ProduceItem[] = [
     commonsFile: 'Leeks.jpg',
   },
 ]
+
+export const produce: ProduceItem[] = [...curated, ...produceExtra]

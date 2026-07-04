@@ -14,6 +14,23 @@ export function commonsInfoUrl(file) {
   return `https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&titles=${title}&iiprop=${props}`
 }
 
+// Full-text search over the Commons File namespace, used as a fallback when an
+// item's exact commonsFile can't be resolved. Returns the API url for a query.
+export function commonsSearchUrl(query) {
+  const params = new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    generator: 'search',
+    gsrnamespace: '6', // File namespace
+    gsrsearch: query,
+    gsrlimit: '10',
+    prop: 'imageinfo',
+    iiprop: 'url|extmetadata',
+    maxlag: '5',
+  })
+  return `https://commons.wikimedia.org/w/api.php?${params.toString()}`
+}
+
 export function outputPaths(id) {
   return { badge: join(IMAGES_DIR, `${id}-badge.webp`), hero: join(IMAGES_DIR, `${id}-hero.webp`) }
 }
@@ -76,6 +93,43 @@ async function fetchImageInfoBatch(files) {
   return byFile
 }
 
+// Clean an item's display name into a plain search query: drop parentheticals
+// (e.g. "Ugu (Fluted Pumpkin)") and stray punctuation that hurts search recall.
+const searchQuery = (name) => name.replace(/\([^)]*\)/g, '').replace(/['"’]/g, '').trim()
+
+// Fallback: search Commons for a photo matching the item's name and return the
+// first raster (JPEG/PNG) result, preserving the search engine's relevance order.
+async function searchCommonsImage(query) {
+  const url = commonsSearchUrl(query)
+  let data
+  for (let i = 0; i < 5; i++) {
+    const res = await fetch(url, { headers: { 'User-Agent': UA } })
+    const text = await res.text()
+    try {
+      const parsed = JSON.parse(text)
+      if (parsed.query || parsed.batchcomplete !== undefined) { data = parsed; break }
+    } catch {}
+    await sleep(2500 * (i + 1))
+  }
+  if (!data || !data.query) return null
+  const pages = Object.values(data.query.pages ?? {}).sort(
+    (a, b) => (a.index ?? 0) - (b.index ?? 0),
+  )
+  for (const page of pages) {
+    const info = page.imageinfo?.[0]
+    if (!info) continue
+    if (!/\.(jpe?g|png)$/i.test(page.title)) continue // skip svg/pdf/tif/gif
+    const meta = info.extmetadata ?? {}
+    return {
+      url: info.url,
+      file: page.title.replace(/^File:/, ''),
+      artist: (meta.Artist?.value ?? 'Unknown').replace(/<[^>]+>/g, '').trim(),
+      license: meta.LicenseShortName?.value ?? 'Unknown',
+    }
+  }
+  return null
+}
+
 async function resolveAllInfo(items) {
   const infoByFile = new Map()
   for (let i = 0; i < items.length; i += 40) {
@@ -98,16 +152,25 @@ async function main() {
 
   for (const item of produce) {
     try {
-      const info = infoByFile.get(item.commonsFile)
-      if (!info) throw new Error(`Commons file not found: ${item.commonsFile}`)
-      attributions[item.id] = { file: item.commonsFile, artist: info.artist, license: info.license, source: info.url }
-      if (dryRun) {
-        console.log(`ok   ${item.id} <- ${item.commonsFile}`)
+      const { badge, hero } = outputPaths(item.id)
+      // Skip work early if both outputs already exist (unless --force).
+      if (!force && !dryRun && (await exists(badge)) && (await exists(hero))) {
+        console.log(`skip ${item.id}`)
         continue
       }
-      const { badge, hero } = outputPaths(item.id)
-      if (!force && (await exists(badge)) && (await exists(hero))) {
-        console.log(`skip ${item.id}`)
+      // Prefer the item's exact commonsFile; if it didn't resolve, fall back to
+      // a Commons name search so every item still gets a real image.
+      let info = infoByFile.get(item.commonsFile)
+      let sourceFile = item.commonsFile
+      if (!info) {
+        info = await searchCommonsImage(searchQuery(item.name))
+        if (info) sourceFile = info.file
+        await sleep(300)
+      }
+      if (!info) throw new Error(`No Commons image found for ${item.id} (${item.name})`)
+      attributions[item.id] = { file: sourceFile, artist: info.artist, license: info.license, source: info.url }
+      if (dryRun) {
+        console.log(`ok   ${item.id} <- ${sourceFile}`)
         continue
       }
       const buf = await downloadWithRetry(info.url)
