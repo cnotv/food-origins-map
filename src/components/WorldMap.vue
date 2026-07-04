@@ -60,11 +60,16 @@ function render(items: ProduceItem[]) {
 onMounted(() => {
   if (!el.value) return
   map = L.map(el.value, { worldCopyJump: true, minZoom: 2 }).setView([20, 10], 2)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
+  // Label-free CARTO basemap: keeps faint land/sea shapes but drops roads,
+  // terrain, and place labels so the produce markers stand alone.
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors © CARTO',
     maxZoom: 12,
   }).addTo(map)
-  cluster = L.markerClusterGroup({ maxClusterRadius: 45 })
+  // Cluster only when badges would actually overlap: the radius matches the
+  // 40px marker diameter, so markers group up solely when there isn't room to
+  // spread them out, and otherwise stay as individual images.
+  cluster = L.markerClusterGroup({ maxClusterRadius: 40 })
   map.addLayer(cluster)
   render(props.items)
 })
@@ -94,6 +99,8 @@ onBeforeUnmount(() => {
 
 <style>
 .world-map { position: absolute; inset: 0; }
+/* Push Leaflet's top-left zoom control clear of the fixed topbar. */
+.leaflet-top .leaflet-control { margin-top: 60px; }
 .marker-badge {
   width: 40px; height: 40px; border-radius: 50%; border: 3px solid;
   overflow: hidden; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
