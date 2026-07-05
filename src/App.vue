@@ -79,9 +79,23 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   </div>
 </template>
 <style scoped>
-.app-shell { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.app-shell {
+  position: absolute; inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'header header header'
+    'search map    panel';
+}
+/* Scoped styles reach each child component's root element, so the whole
+   shell layout is assigned here in one place. */
+.topbar { grid-area: header; }
+.app-shell :deep(.search-view) { grid-area: search; }
+.app-shell :deep(.world-map) { grid-area: map; }
+.app-shell :deep(.side-panel) { grid-area: panel; }
 .topbar {
-  flex: none; z-index: 900;
+  z-index: 900;
   display: flex; align-items: center; gap: 16px; padding: 10px 16px;
   background: #fff; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
 }
@@ -95,6 +109,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .bug-link { flex: none; font-size: 13px; color: #666; }
 .bug-link:hover { color: #333; }
 @media (max-width: 640px) {
+  /* Phones cannot fit sidebars next to the map: search swaps into the map
+     slot, and the detail panel becomes a bottom row that pushes the map up. */
+  .app-shell {
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr;
+    grid-template-areas: 'header' 'map' 'panel';
+  }
+  .app-shell :deep(.search-view) { grid-area: map; z-index: 2; }
   .topbar { flex-wrap: wrap; gap: 8px; }
   .topbar h1 { flex: 1; }
   .bug-link { order: 2; }

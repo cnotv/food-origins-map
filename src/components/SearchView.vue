@@ -3,12 +3,31 @@ import { ref, computed } from 'vue'
 import type { ProduceItem, Category } from '../data/types'
 import { badgeImagePath } from '../data/validators'
 import FilterChips from './FilterChips.vue'
+import NutritionFilter, { type Nutrient, type Thresholds } from './NutritionFilter.vue'
 
 const props = defineProps<{ items: ProduceItem[]; selectedId: string | null }>()
 const emit = defineEmits<{ select: [item: ProduceItem]; close: [] }>()
 
 const query = ref('')
 const category = ref<Category | 'all'>('all')
+
+const NUTRIENTS: Nutrient[] = ['calories', 'carbs', 'fiber', 'protein']
+// Dataset maxima per nutrient (rounded up) — the slider ceilings and defaults.
+const nutritionMax = computed<Thresholds>(() => {
+  const max = { calories: 0, carbs: 0, fiber: 0, protein: 0 }
+  for (const it of props.items)
+    for (const n of NUTRIENTS) max[n] = Math.max(max[n], Math.ceil(it.nutrition.per100g[n]))
+  return max
+})
+// Thresholds start at the maxima, so nothing is filtered out by default.
+const thresholds = ref<Thresholds>({ calories: Infinity, carbs: Infinity, fiber: Infinity, protein: Infinity })
+const effectiveThresholds = computed<Thresholds>(() => {
+  const t = thresholds.value
+  const max = nutritionMax.value
+  const out = { ...max }
+  for (const n of NUTRIENTS) if (t[n] !== Infinity) out[n] = t[n]
+  return out
+})
 
 const COLORS: Record<Category, string> = {
   fruit: '#e4572e',
@@ -25,8 +44,10 @@ const CATEGORY_LABEL: Record<Category, string> = {
 
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
+  const nut = effectiveThresholds.value
   return props.items
     .filter((it) => category.value === 'all' || it.category === category.value)
+    .filter((it) => NUTRIENTS.every((n) => it.nutrition.per100g[n] <= nut[n]))
     .filter(
       (it) =>
         !q ||
@@ -60,6 +81,11 @@ const onThumbError = (e: Event) => {
         autofocus
       />
       <FilterChips :active="category" @change="category = $event" />
+      <NutritionFilter
+        :model-value="effectiveThresholds"
+        :max="nutritionMax"
+        @update:model-value="thresholds = $event"
+      />
       <p class="count">{{ results.length }} {{ results.length === 1 ? 'food' : 'foods' }}</p>
     </header>
 
@@ -96,9 +122,9 @@ const onThumbError = (e: Event) => {
 
 <style scoped>
 .search-view {
-  position: absolute; top: 0; left: 0; bottom: 0; width: min(360px, 100%);
+  width: 360px; min-height: 0;
   background: #fff; box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
-  display: flex; flex-direction: column; z-index: 1000;
+  display: flex; flex-direction: column;
 }
 .search-head { padding: 14px 16px 8px; border-bottom: 1px solid #eee; }
 .row { display: flex; align-items: center; justify-content: space-between; }
