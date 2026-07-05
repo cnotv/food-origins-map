@@ -84,7 +84,10 @@ onBeforeUnmount(() => observer?.disconnect())
 </template>
 <style scoped>
 .chips-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+/* min-width:0 lets the scroller shrink below its content so overflow-x can
+   engage; without it the chip row forces the whole header wider than the
+   viewport (horizontal page overflow on mobile). */
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
   border: 1px solid #ccc; background: #fff; border-radius: 16px;

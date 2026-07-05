@@ -68,33 +68,7 @@ const el = ref<HTMLDivElement | null>(null)
 let map: L.Map | null = null
 let cluster: L.MarkerClusterGroup | null = null
 let resizeObserver: ResizeObserver | null = null
-let areaLayer: L.Circle | null = null
 const markerById = new Map<string, L.Marker>()
-
-// Indicative radius of the origin/growing region. We only have a single origin
-// point per item, not a true cultivation polygon, so this is a labelled
-// approximation rather than exact range data.
-const AREA_RADIUS_M = 750_000
-
-function clearArea() {
-  if (areaLayer && map) map.removeLayer(areaLayer)
-  areaLayer = null
-}
-
-function showArea(item: ProduceItem) {
-  if (!map) return
-  clearArea()
-  const color = COLORS[item.category]
-  areaLayer = L.circle([item.origin.lat, item.origin.lng], {
-    radius: AREA_RADIUS_M,
-    color,
-    weight: 1.5,
-    fillColor: color,
-    fillOpacity: 0.12,
-    interactive: false,
-  }).addTo(map)
-  areaLayer.bindTooltip(`Approximate growing region of ${item.name}`, { sticky: true })
-}
 
 // Items sharing an identical origin point can never be separated by zooming,
 // so they would stay clustered (or stack) forever. Spread each such group onto
@@ -200,13 +174,7 @@ watch(
 watch(
   () => props.selectedId,
   (id) => {
-    if (!map) return
-    if (!id) {
-      clearArea()
-      return
-    }
-    const item = props.items.find((it) => it.id === id)
-    if (item) showArea(item)
+    if (!map || !id) return
     const m = markerById.get(id)
     if (m) map.panTo(m.getLatLng(), { animate: true })
   },
@@ -215,7 +183,6 @@ watch(
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   resizeObserver = null
-  clearArea()
   map?.remove()
   map = null
 })
@@ -226,8 +193,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-/* Sized by its grid track in the app shell. */
-.world-map { position: relative; min-height: 0; min-width: 0; }
+/* Sized by its grid track in the app shell. z-index:0 gives it a stacking
+   context so Leaflet's high z-index panes stay contained — otherwise they
+   paint over the search panel that shares the map cell on mobile. */
+.world-map { position: relative; min-height: 0; min-width: 0; z-index: 0; }
 
 /* Every label on the map — cluster counts — is bold white with a crisp
    black outline so it stays legible over the produce photos beneath it. */

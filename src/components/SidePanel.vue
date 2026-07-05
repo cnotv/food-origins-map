@@ -4,6 +4,7 @@ import type { ProduceItem } from '../data/types'
 import { heroImagePath } from '../data/validators'
 import { getFieldGuide } from '../data/guide'
 import NutritionTable from './NutritionTable.vue'
+import MiniMap from './MiniMap.vue'
 import attributions from '../../public/images/attributions.json'
 
 const props = defineProps<{ item: ProduceItem | null }>()
@@ -69,6 +70,7 @@ const onHeroError = (e: Event) => ((e.target as HTMLElement).style.visibility = 
 
       <!-- About -->
       <section v-show="activeTab === 'About'" class="tab-panel">
+        <MiniMap :item="item" />
         <p class="story">{{ item.story }}</p>
         <NutritionTable :nutrition="item.nutrition" />
         <a class="recipes-link" :href="item.tasteAtlasUrl" target="_blank" rel="noopener">
@@ -133,7 +135,8 @@ const onHeroError = (e: Event) => ((e.target as HTMLElement).style.visibility = 
 .close {
   position: absolute; top: 10px; right: 10px; border: none;
   background: rgba(255, 255, 255, 0.85); border-radius: 50%;
-  width: 32px; height: 32px; font-size: 16px; cursor: pointer; z-index: 1;
+  width: 32px; height: 32px; font-size: 16px; cursor: pointer; z-index: 5;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 .hero { width: 100%; height: 200px; object-fit: cover; display: block; }
 .body { padding: 16px 20px 32px; }
@@ -176,6 +179,12 @@ h2 { margin: 8px 0 2px; }
 }
 .attribution { margin-top: 16px; font-size: 11px; color: #999; }
 @media (max-width: 640px) {
-  .side-panel { width: 100%; max-height: 55vh; box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15); }
+  /* Full-page detail: cover the map/search entirely, with a fixed, always-
+     visible close button that stays put while the content scrolls. */
+  .side-panel {
+    position: fixed; inset: 0; width: 100%; height: 100%; max-height: none;
+    z-index: 2000; box-shadow: none;
+  }
+  .close { position: fixed; top: 12px; right: 12px; width: 40px; height: 40px; font-size: 18px; }
 }
 </style>

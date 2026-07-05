@@ -98,6 +98,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   z-index: 900;
   display: flex; align-items: center; gap: 16px; padding: 10px 16px;
   background: #fff; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  /* Let the header shrink to its grid track instead of being forced wider by
+     the chip row's content (which would overflow the page horizontally). */
+  min-width: 0;
 }
 .topbar h1 { font-size: 18px; margin: 0; white-space: nowrap; }
 .search-toggle {
@@ -116,7 +119,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     grid-template-columns: 1fr;
     grid-template-areas: 'header' 'map' 'panel';
   }
-  .app-shell :deep(.search-view) { grid-area: map; z-index: 2; }
+  .app-shell :deep(.search-view) {
+    grid-area: map; z-index: 2; position: relative; min-width: 0;
+  }
   .topbar { flex-wrap: wrap; gap: 8px; }
   .topbar h1 { flex: 1; }
   .bug-link { order: 2; }
