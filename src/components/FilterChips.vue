@@ -90,15 +90,15 @@ onBeforeUnmount(() => observer?.disconnect())
 .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
-  border: 1px solid #ccc; background: #fff; border-radius: 16px;
-  padding: 6px 14px; font-size: 13px; cursor: pointer; white-space: nowrap;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  border-radius: 16px; padding: 6px 14px; font-size: 13px; cursor: pointer; white-space: nowrap;
 }
-.chip.active { background: #333; color: #fff; border-color: #333; }
+.chip.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .chip-arrow {
   flex: none; width: 26px; height: 26px; border-radius: 50%;
-  border: 1px solid #ccc; background: #fff; cursor: pointer;
-  font-size: 16px; line-height: 1; padding: 0;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  cursor: pointer; font-size: 16px; line-height: 1; padding: 0;
   display: flex; align-items: center; justify-content: center;
 }
-.chip-arrow:hover { background: #f2f2f2; }
+.chip-arrow:hover { background: var(--surface-2); }
 </style>

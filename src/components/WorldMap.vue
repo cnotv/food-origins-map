@@ -55,6 +55,7 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
+import { addBasemap } from '../composables/basemap'
 
 defineOptions({ name: 'WorldMap' })
 
@@ -68,6 +69,7 @@ const el = ref<HTMLDivElement | null>(null)
 let map: L.Map | null = null
 let cluster: L.MarkerClusterGroup | null = null
 let resizeObserver: ResizeObserver | null = null
+let cleanupBasemap: (() => void) | null = null
 const markerById = new Map<string, L.Marker>()
 
 // Items sharing an identical origin point can never be separated by zooming,
@@ -127,12 +129,11 @@ function render(items: ProduceItem[]) {
 onMounted(() => {
   if (!el.value) return
   map = L.map(el.value, { worldCopyJump: true, minZoom: 2, maxZoom: MAX_ZOOM }).setView([20, 10], 2)
-  // Label-free CARTO basemap: keeps faint land/sea shapes but drops roads,
-  // terrain, and place labels so the produce markers stand alone.
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+  // Basemap follows the OS light/dark setting.
+  cleanupBasemap = addBasemap(map, {
     attribution: '© OpenStreetMap contributors © CARTO',
     maxZoom: MAX_ZOOM,
-  }).addTo(map)
+  })
   // Cluster only when badges would actually overlap: the radius matches the
   // marker diameter, so markers group up solely when there isn't room to
   // spread them out, and otherwise stay as individual images.
@@ -183,6 +184,8 @@ watch(
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   resizeObserver = null
+  cleanupBasemap?.()
+  cleanupBasemap = null
   map?.remove()
   map = null
 })

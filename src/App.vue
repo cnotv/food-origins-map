@@ -97,20 +97,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .topbar {
   z-index: 900;
   display: flex; align-items: center; gap: 16px; padding: 10px 16px;
-  background: #fff; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  background: var(--surface); color: var(--text); box-shadow: 0 1px 6px var(--shadow);
   /* Let the header shrink to its grid track instead of being forced wider by
      the chip row's content (which would overflow the page horizontally). */
   min-width: 0;
 }
 .topbar h1 { font-size: 18px; margin: 0; white-space: nowrap; }
 .search-toggle {
-  margin-left: auto; border: 1px solid #ccc; background: #fff;
-  border-radius: 16px; padding: 6px 14px; font-size: 13px; cursor: pointer;
-  white-space: nowrap;
+  margin-left: auto; border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--text); border-radius: 16px; padding: 6px 14px; font-size: 13px;
+  cursor: pointer; white-space: nowrap;
 }
-.search-toggle.active { background: #333; color: #fff; border-color: #333; }
-.bug-link { flex: none; font-size: 13px; color: #666; }
-.bug-link:hover { color: #333; }
+.search-toggle.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.bug-link { flex: none; font-size: 13px; color: var(--text-muted); }
+.bug-link:hover { color: var(--text); }
 @media (max-width: 640px) {
   /* Phones cannot fit sidebars next to the map: search swaps into the map
      slot, and the detail panel becomes a bottom row that pushes the map up. */

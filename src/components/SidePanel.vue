@@ -129,55 +129,55 @@ const onHeroError = (e: Event) => ((e.target as HTMLElement).style.visibility = 
 <style scoped>
 .side-panel {
   position: relative; width: 380px; min-height: 0;
-  background: #fff; box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
+  background: var(--surface); color: var(--text); box-shadow: -2px 0 12px var(--shadow);
   overflow-y: auto;
 }
 .close {
   position: absolute; top: 10px; right: 10px; border: none;
-  background: rgba(255, 255, 255, 0.85); border-radius: 50%;
+  background: var(--surface); color: var(--text); border-radius: 50%;
   width: 32px; height: 32px; font-size: 16px; cursor: pointer; z-index: 5;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 4px var(--shadow-strong);
 }
 .hero { width: 100%; height: 200px; object-fit: cover; display: block; }
 .body { padding: 16px 20px 32px; }
 .tag {
-  display: inline-block; background: #eee; border-radius: 12px; padding: 2px 10px;
-  font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #555;
+  display: inline-block; background: var(--tag-bg); border-radius: 12px; padding: 2px 10px;
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tag-text);
 }
 h2 { margin: 8px 0 2px; }
-.local-name { margin: 0 0 4px; color: #555; font-style: italic; font-size: 14px; }
-.region { color: #666; margin: 0 0 12px; }
+.local-name { margin: 0 0 4px; color: var(--text-muted); font-style: italic; font-size: 14px; }
+.region { color: var(--text-muted); margin: 0 0 12px; }
 
 .tabs {
-  display: flex; gap: 4px; border-bottom: 1px solid #eee; margin-bottom: 16px;
+  display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
   overflow-x: auto; scrollbar-width: none;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
   border: none; background: none; padding: 8px 10px; font-size: 13px; cursor: pointer;
-  color: #777; border-bottom: 2px solid transparent; white-space: nowrap;
+  color: var(--text-muted); border-bottom: 2px solid transparent; white-space: nowrap;
 }
-.tab.active { color: #111; border-bottom-color: #333; font-weight: 600; }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
 
 .story { line-height: 1.5; margin-top: 0; }
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0 0 4px; }
-.facts dt { color: #888; font-size: 13px; }
+.facts dt { color: var(--text-faint); font-size: 13px; }
 .facts dd { margin: 0; font-size: 14px; }
-.facts dd.warn { color: #b23b1e; font-weight: 600; }
-.wild { margin-top: 16px; border-top: 1px solid #eee; padding-top: 12px; }
+.facts dd.warn { color: var(--warn-text); font-weight: 600; }
+.wild { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
 .wild h3 { margin: 0 0 8px; font-size: 15px; }
 .wild p { line-height: 1.45; margin: 0 0 8px; font-size: 14px; }
 .forage-warning {
-  background: #fff6f2; border: 1px solid #f3d2c5; border-radius: 8px;
-  padding: 8px 10px; color: #8a3b22; font-size: 12.5px;
+  background: var(--forage-bg); border: 1px solid var(--forage-border); border-radius: 8px;
+  padding: 8px 10px; color: var(--forage-text); font-size: 12.5px;
 }
 .list { margin: 0; padding-left: 18px; line-height: 1.6; }
-.muted { color: #999; font-style: italic; }
+.muted { color: var(--text-faint); font-style: italic; }
 .recipes-link {
-  display: inline-block; margin-top: 12px; background: #e4572e; color: #fff;
+  display: inline-block; margin-top: 12px; background: var(--brand); color: #fff;
   text-decoration: none; padding: 10px 16px; border-radius: 8px; font-weight: 600;
 }
-.attribution { margin-top: 16px; font-size: 11px; color: #999; }
+.attribution { margin-top: 16px; font-size: 11px; color: var(--text-faint); }
 @media (max-width: 640px) {
   /* Full-page detail: cover the map/search entirely, with a fixed, always-
      visible close button that stays put while the content scrolls. */

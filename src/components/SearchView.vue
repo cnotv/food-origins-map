@@ -123,32 +123,33 @@ const onThumbError = (e: Event) => {
 <style scoped>
 .search-view {
   width: 360px; min-height: 0;
-  background: #fff; box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+  background: var(--surface); color: var(--text); box-shadow: 2px 0 12px var(--shadow);
   display: flex; flex-direction: column;
 }
-.search-head { padding: 14px 16px 8px; border-bottom: 1px solid #eee; }
+.search-head { padding: 14px 16px 8px; border-bottom: 1px solid var(--border); }
 .row { display: flex; align-items: center; justify-content: space-between; }
 .row h2 { margin: 0; font-size: 18px; }
 .close {
-  border: none; background: #f2f2f2; border-radius: 50%;
+  border: none; background: var(--surface-2); color: var(--text); border-radius: 50%;
   width: 30px; height: 30px; font-size: 15px; cursor: pointer;
 }
 .search-input {
   width: 100%; margin: 12px 0; padding: 10px 12px; font-size: 14px;
-  border: 1px solid #ccc; border-radius: 8px;
+  border: 1px solid var(--border-strong); border-radius: 8px;
+  background: var(--surface); color: var(--text);
 }
-.count { margin: 8px 0 4px; font-size: 12px; color: #888; }
+.count { margin: 8px 0 4px; font-size: 12px; color: var(--text-faint); }
 .results { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; flex: 1; }
-.empty { padding: 24px 16px; color: #888; text-align: center; }
+.empty { padding: 24px 16px; color: var(--text-faint); text-align: center; }
 .result {
   display: flex; align-items: center; gap: 12px; padding: 8px 16px;
   cursor: pointer; border-left: 3px solid transparent;
 }
-.result:hover { background: #f7f7f7; }
-.result.active { background: #f0f0f0; border-left-color: #333; }
+.result:hover { background: var(--surface-hover); }
+.result.active { background: var(--surface-2); border-left-color: var(--accent); }
 .thumb {
   flex: none; width: 36px; height: 36px; border-radius: 50%; border: 2px solid;
-  overflow: hidden; background: #fff;
+  overflow: hidden; background: var(--surface);
 }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb-fallback {
@@ -158,7 +159,7 @@ const onThumbError = (e: Event) => {
 .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .name { font-weight: 600; font-size: 14px; }
 .region {
-  font-size: 12px; color: #888;
+  font-size: 12px; color: var(--text-faint);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cat { flex: none; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }

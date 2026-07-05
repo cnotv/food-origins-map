@@ -56,28 +56,28 @@ const isLow = (key: Nutrient) =>
   </details>
 </template>
 <style scoped>
-.nutri-filter { margin: 8px 0 4px; border: 1px solid #eee; border-radius: 8px; }
+.nutri-filter { margin: 8px 0 4px; border: 1px solid var(--border); border-radius: 8px; }
 summary {
-  cursor: pointer; padding: 8px 12px; font-size: 13px; font-weight: 600; color: #444;
+  cursor: pointer; padding: 8px 12px; font-size: 13px; font-weight: 600; color: var(--text-muted);
   display: flex; align-items: center; gap: 8px; list-style: none;
 }
 summary::-webkit-details-marker { display: none; }
-summary::before { content: '▸'; color: #999; font-size: 11px; }
+summary::before { content: '▸'; color: var(--text-faint); font-size: 11px; }
 .nutri-filter[open] summary::before { content: '▾'; }
 .on-dot { width: 8px; height: 8px; border-radius: 50%; background: #3a7d44; }
 .rows { padding: 4px 12px 12px; }
 .row { margin-bottom: 10px; }
 .row-head { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 2px; }
-.name { color: #555; }
-.val { margin-left: auto; color: #888; }
+.name { color: var(--text-muted); }
+.val { margin-left: auto; color: var(--text-faint); }
 .low-tag {
-  background: #e8f4ea; color: #2f6b3a; border-radius: 8px; padding: 0 6px;
+  background: var(--low-bg); color: var(--low-text); border-radius: 8px; padding: 0 6px;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
 }
 input[type='range'] { width: 100%; accent-color: #3a7d44; }
 .reset {
-  border: 1px solid #ccc; background: #fff; border-radius: 8px; padding: 4px 12px;
-  font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  border-radius: 8px; padding: 4px 12px; font-size: 12px; cursor: pointer;
 }
 .reset:disabled { opacity: 0.4; cursor: default; }
 </style>

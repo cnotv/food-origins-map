@@ -1,3 +1,74 @@
 * { box-sizing: border-box; }
 html, body, #app { margin: 0; height: 100%; }
-body { font-family: system-ui, -apple-system, sans-serif; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Theme tokens. Light is the default; the dark block below follows the
+   operating-system setting via prefers-color-scheme. */
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f2f2f2;
+  --surface-hover: #f7f7f7;
+  --text: #1a1a1a;
+  --text-muted: #666666;
+  --text-faint: #999999;
+  --border: #e6e6e6;
+  --border-strong: #cccccc;
+  --accent: #333333;
+  --on-accent: #ffffff;
+  --tag-bg: #eeeeee;
+  --tag-text: #555555;
+  --shadow: rgba(0, 0, 0, 0.15);
+  --shadow-strong: rgba(0, 0, 0, 0.3);
+  --brand: #e4572e;
+  --warn-text: #b23b1e;
+  --low-bg: #e8f4ea;
+  --low-text: #2f6b3a;
+  --forage-bg: #fff6f2;
+  --forage-border: #f3d2c5;
+  --forage-text: #8a3b22;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171a;
+    --surface: #1e2226;
+    --surface-2: #2a2f34;
+    --surface-hover: #262b30;
+    --text: #e8eaed;
+    --text-muted: #a5adb5;
+    --text-faint: #7c848c;
+    --border: #333a40;
+    --border-strong: #454d54;
+    --accent: #e8eaed;
+    --on-accent: #14171a;
+    --tag-bg: #2a2f34;
+    --tag-text: #b8c0c7;
+    --shadow: rgba(0, 0, 0, 0.5);
+    --shadow-strong: rgba(0, 0, 0, 0.6);
+    --brand: #f26b45;
+    --warn-text: #ff8a66;
+    --low-bg: #1f3a26;
+    --low-text: #7fd493;
+    --forage-bg: #3a2a22;
+    --forage-border: #5a4034;
+    --forage-text: #f0b49a;
+  }
+
+  /* Leaflet injects these controls globally, so they can't use scoped tokens. */
+  .leaflet-bar a {
+    background: #1e2226;
+    color: #e8eaed;
+    border-bottom-color: #333a40;
+  }
+  .leaflet-bar a:hover { background: #2a2f34; }
+  .leaflet-control-attribution {
+    background: rgba(30, 34, 38, 0.8) !important;
+    color: #a5adb5;
+  }
+  .leaflet-control-attribution a { color: #8ab4f8; }
+}

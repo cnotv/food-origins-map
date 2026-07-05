@@ -3,12 +3,14 @@ import { onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
 import L from 'leaflet'
 import type { ProduceItem } from '../data/types'
 import { categoryColor } from './WorldMap.vue'
+import { addBasemap } from '../composables/basemap'
 
 const props = defineProps<{ item: ProduceItem }>()
 
 const el = ref<HTMLDivElement | null>(null)
 let map: L.Map | null = null
 let resizeObserver: ResizeObserver | null = null
+let cleanupBasemap: (() => void) | null = null
 const layerGroup = L.layerGroup()
 
 // A non-interactive locator: shows where in the world the item comes from, with
@@ -49,9 +51,7 @@ onMounted(() => {
     keyboard: false,
     touchZoom: false,
   })
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-    maxZoom: 12,
-  }).addTo(map)
+  cleanupBasemap = addBasemap(map, { maxZoom: 12 })
   layerGroup.addTo(map)
   draw(props.item)
   // The panel/tab it lives in can be hidden then shown; keep the map sized.
@@ -65,6 +65,8 @@ watch(
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   resizeObserver = null
+  cleanupBasemap?.()
+  cleanupBasemap = null
   map?.remove()
   map = null
 })
@@ -79,7 +81,7 @@ onBeforeUnmount(() => {
 .mini-map-wrap { margin: 0 0 4px; }
 .mini-map {
   width: 100%; height: 170px; border-radius: 10px; overflow: hidden;
-  border: 1px solid #eee; background: #eef1f2;
+  border: 1px solid var(--border); background: var(--surface-2);
 }
-.mini-cap { display: block; margin-top: 4px; font-size: 11px; color: #999; }
+.mini-cap { display: block; margin-top: 4px; font-size: 11px; color: var(--text-faint); }
 </style>
