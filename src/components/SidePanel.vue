@@ -52,7 +52,7 @@ const onHeroError = (e: Event) => ((e.target as HTMLElement).style.visibility = 
       <span class="tag">{{ CATEGORY_LABEL[item.category] }}</span>
       <h2>{{ item.name }}</h2>
       <p v-if="guide?.localName" class="local-name">{{ guide.localName }}</p>
-      <p class="region">📍 {{ item.origin.region }}</p>
+      <p class="region">{{ item.origin.region }}</p>
 
       <nav class="tabs" role="tablist">
         <button

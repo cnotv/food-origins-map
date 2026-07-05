@@ -32,16 +32,29 @@ const results = computed(() =>
   place.value ? foragableNow(props.items, place.value.lat) : [],
 )
 
+// Fetch JSON with a hard timeout so a stalled or blocked request surfaces an
+// error instead of leaving the UI stuck on "Locating…".
+async function fetchJson(url: string, ms = 8000) {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), ms)
+  try {
+    const res = await fetch(url, { signal: ctrl.signal })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return await res.json()
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function geocodeCity() {
   const q = query.value.trim()
   if (!q) return
   loading.value = true
   error.value = ''
   try {
-    const res = await fetch(
+    const data = await fetchJson(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1`,
     )
-    const data = await res.json()
     const hit = data.results?.[0]
     if (!hit) {
       error.value = `Couldn't find "${q}".`
@@ -53,7 +66,7 @@ async function geocodeCity() {
       lat: hit.latitude,
     }
   } catch {
-    error.value = 'Location lookup failed. Check your connection and try again.'
+    error.value = 'Location lookup failed — check your connection (or an ad/privacy blocker) and try again.'
   } finally {
     loading.value = false
   }
@@ -71,10 +84,9 @@ function useMyLocation() {
       const { latitude, longitude } = pos.coords
       let name = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
       try {
-        const res = await fetch(
+        const d = await fetchJson(
           `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
         )
-        const d = await res.json()
         const label = d.city || d.locality || d.principalSubdivision
         if (label) name = [label, d.countryName].filter(Boolean).join(', ')
       } catch {
@@ -90,6 +102,7 @@ function useMyLocation() {
           : 'Could not get your location.'
       loading.value = false
     },
+    { timeout: 10000, maximumAge: 60000 },
   )
 }
 
@@ -120,7 +133,7 @@ const onThumbError = (e: Event) => {
         <button type="submit" class="go" :disabled="loading">Go</button>
       </form>
       <button class="use-loc" :disabled="loading" @click="useMyLocation">
-        📍 Use my location
+        Use my location
       </button>
 
       <p v-if="loading" class="status">Locating…</p>

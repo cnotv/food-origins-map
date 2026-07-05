@@ -72,7 +72,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         :aria-pressed="forageOpen"
         @click="toggleForage"
       >
-        🌿 Forage
+        Forage
       </button>
       <button
         class="search-toggle"
@@ -80,7 +80,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         :aria-pressed="searchOpen"
         @click="toggleSearch"
       >
-        🔍 Search
+        Search
       </button>
       <a class="bug-link" :href="bugReportUrl" target="_blank" rel="noopener">bugs?</a>
     </header>
