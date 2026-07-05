@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import WorldMap from './components/WorldMap.vue'
 import SidePanel from './components/SidePanel.vue'
 import SearchView from './components/SearchView.vue'
+import ForageView from './components/ForageView.vue'
 import FilterChips from './components/FilterChips.vue'
 import { produce } from './data/produce'
 import type { ProduceItem, Category } from './data/types'
@@ -10,6 +11,17 @@ import type { ProduceItem, Category } from './data/types'
 const selected = ref<ProduceItem | null>(null)
 const activeFilter = ref<Category | 'all'>('all')
 const searchOpen = ref(false)
+const forageOpen = ref(false)
+
+// Search and Forage share the same left slot, so only one is open at a time.
+function toggleSearch() {
+  searchOpen.value = !searchOpen.value
+  if (searchOpen.value) forageOpen.value = false
+}
+function toggleForage() {
+  forageOpen.value = !forageOpen.value
+  if (forageOpen.value) searchOpen.value = false
+}
 
 const filteredItems = computed(() =>
   activeFilter.value === 'all' ? produce : produce.filter((p) => p.category === activeFilter.value),
@@ -41,9 +53,10 @@ const bugReportUrl = computed(() => {
 
 const onKey = (e: KeyboardEvent) => {
   if (e.key !== 'Escape') return
-  // Close the topmost overlay first: detail panel, then search.
+  // Close the topmost overlay first: detail panel, then search/forage.
   if (selected.value) selected.value = null
   else if (searchOpen.value) searchOpen.value = false
+  else if (forageOpen.value) forageOpen.value = false
 }
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
@@ -54,10 +67,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <h1>Food Origins Map</h1>
       <FilterChips :active="activeFilter" @change="activeFilter = $event" />
       <button
+        class="forage-toggle"
+        :class="{ active: forageOpen }"
+        :aria-pressed="forageOpen"
+        @click="toggleForage"
+      >
+        🌿 Forage
+      </button>
+      <button
         class="search-toggle"
         :class="{ active: searchOpen }"
         :aria-pressed="searchOpen"
-        @click="searchOpen = !searchOpen"
+        @click="toggleSearch"
       >
         🔍 Search
       </button>
@@ -75,6 +96,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       @select="onSearchSelect"
       @close="searchOpen = false"
     />
+    <ForageView
+      v-if="forageOpen"
+      :items="produce"
+      :selected-id="selected?.id ?? null"
+      @select="onSearchSelect"
+      @close="forageOpen = false"
+    />
     <SidePanel :item="selected" @close="selected = null" />
   </div>
 </template>
@@ -91,7 +119,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 /* Scoped styles reach each child component's root element, so the whole
    shell layout is assigned here in one place. */
 .topbar { grid-area: header; }
-.app-shell :deep(.search-view) { grid-area: search; }
+.app-shell :deep(.search-view),
+.app-shell :deep(.forage-view) { grid-area: search; }
 .app-shell :deep(.world-map) { grid-area: map; }
 .app-shell :deep(.side-panel) { grid-area: panel; }
 .topbar {
@@ -103,12 +132,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   min-width: 0;
 }
 .topbar h1 { font-size: 18px; margin: 0; white-space: nowrap; }
-.search-toggle {
-  margin-left: auto; border: 1px solid var(--border-strong); background: var(--surface);
+.search-toggle, .forage-toggle {
+  border: 1px solid var(--border-strong); background: var(--surface);
   color: var(--text); border-radius: 16px; padding: 6px 14px; font-size: 13px;
   cursor: pointer; white-space: nowrap;
 }
-.search-toggle.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.forage-toggle { margin-left: auto; }
+.search-toggle.active, .forage-toggle.active {
+  background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+}
 .bug-link { flex: none; font-size: 13px; color: var(--text-muted); }
 .bug-link:hover { color: var(--text); }
 @media (max-width: 640px) {
@@ -119,7 +151,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     grid-template-columns: 1fr;
     grid-template-areas: 'header' 'map' 'panel';
   }
-  .app-shell :deep(.search-view) {
+  .app-shell :deep(.search-view),
+  .app-shell :deep(.forage-view) {
     grid-area: map; z-index: 2; position: relative; min-width: 0;
   }
   .topbar { flex-wrap: wrap; gap: 8px; }
@@ -127,6 +160,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   .bug-link { order: 2; }
   /* Scoped styles reach the FilterChips root element. */
   .topbar .chips-row { order: 3; flex-basis: 100%; }
-  .search-toggle { margin-left: 0; order: 4; flex-basis: 100%; }
+  /* Forage + Search share the next row, side by side. */
+  .forage-toggle { margin-left: 0; order: 4; flex: 1; }
+  .search-toggle { margin-left: 0; order: 5; flex: 1; }
 }
 </style>
