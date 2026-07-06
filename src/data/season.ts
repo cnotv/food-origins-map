@@ -3,6 +3,43 @@ import { getFieldGuide } from './guide'
 
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter'
 
+// Biogeographic realms — the standard way ecologists divide the land by which
+// plants and animals share a history. A location and an item are each mapped to
+// a realm from their coordinates; a wild food is only offered where its realm
+// matches. This is the "preset" that makes Potsdam → Palearctic (Europe +
+// temperate Asia + North Africa) rather than "anything in a northern summer".
+export type Realm =
+  | 'palearctic'
+  | 'nearctic'
+  | 'neotropical'
+  | 'afrotropical'
+  | 'indomalayan'
+  | 'australasian'
+
+export const REALM_LABEL: Record<Realm, string> = {
+  palearctic: 'Europe, North Africa & temperate Asia',
+  nearctic: 'North America',
+  neotropical: 'Central & South America',
+  afrotropical: 'Sub-Saharan Africa',
+  indomalayan: 'South & Southeast Asia',
+  australasian: 'Australia & the Pacific',
+}
+
+// Classify a coordinate into a realm using coarse boundaries. Approximate by
+// design — it captures which landmass/climate belt a point belongs to.
+export function classifyRealm(lat: number, lng: number): Realm {
+  // The Americas.
+  if (lng <= -30) return lat >= 23 ? 'nearctic' : 'neotropical'
+  // Australia, New Zealand and the south-west Pacific.
+  if (lng >= 110 && lat <= -10) return 'australasian'
+  // Sub-Saharan Africa.
+  if (lng >= -20 && lng <= 55 && lat < 15 && lat > -40) return 'afrotropical'
+  // Tropical South and Southeast Asia.
+  if (lng >= 68 && lat < 28 && lat > -11) return 'indomalayan'
+  // Everything else in the Old World: Europe, North Africa, temperate Asia.
+  return 'palearctic'
+}
+
 const OPPOSITE: Record<Season, Season> = {
   spring: 'autumn',
   autumn: 'spring',
@@ -40,14 +77,22 @@ export function currentSeasonForLat(lat: number, date: Date = new Date()): Seaso
 
 export const hemisphere = (lat: number) => (lat < 0 ? 'Southern' : 'Northern')
 
-// Items that can be foraged in the wild (have foraging notes) and are in season
-// for the given latitude right now, sorted by name.
-export function foragableNow(items: ProduceItem[], lat: number, date: Date = new Date()) {
+// Items that can be foraged in the wild (have foraging notes), are native to
+// the location's biogeographic realm, and are in season there right now.
+export function foragableNow(
+  items: ProduceItem[],
+  lat: number,
+  lng: number,
+  date: Date = new Date(),
+) {
   const season = currentSeasonForLat(lat, date)
+  const realm = classifyRealm(lat, lng)
   return items
     .filter((it) => {
       const guide = getFieldGuide(it.id)
-      return !!guide?.wild && parseSeasons(guide.harvestSeason).has(season)
+      if (!guide?.wild) return false
+      if (classifyRealm(it.origin.lat, it.origin.lng) !== realm) return false
+      return parseSeasons(guide.harvestSeason).has(season)
     })
     .sort((a, b) => a.name.localeCompare(b.name))
 }

@@ -3,7 +3,14 @@ import { ref, computed } from 'vue'
 import type { ProduceItem } from '../data/types'
 import { badgeImagePath } from '../data/validators'
 import { categoryColor } from './WorldMap.vue'
-import { foragableNow, currentSeasonForLat, hemisphere, type Season } from '../data/season'
+import {
+  foragableNow,
+  currentSeasonForLat,
+  hemisphere,
+  classifyRealm,
+  REALM_LABEL,
+  type Season,
+} from '../data/season'
 
 const props = defineProps<{ items: ProduceItem[]; selectedId: string | null }>()
 const emit = defineEmits<{ select: [item: ProduceItem]; close: [] }>()
@@ -25,11 +32,14 @@ const query = ref('')
 const loading = ref(false)
 const error = ref('')
 // The resolved place, or null until the user picks a location.
-const place = ref<{ name: string; lat: number } | null>(null)
+const place = ref<{ name: string; lat: number; lng: number } | null>(null)
 
 const season = computed(() => (place.value ? currentSeasonForLat(place.value.lat) : null))
+const realm = computed(() =>
+  place.value ? classifyRealm(place.value.lat, place.value.lng) : null,
+)
 const results = computed(() =>
-  place.value ? foragableNow(props.items, place.value.lat) : [],
+  place.value ? foragableNow(props.items, place.value.lat, place.value.lng) : [],
 )
 
 // Fetch JSON with a hard timeout so a stalled or blocked request surfaces an
@@ -64,6 +74,7 @@ async function geocodeCity() {
     place.value = {
       name: [hit.name, hit.country].filter(Boolean).join(', '),
       lat: hit.latitude,
+      lng: hit.longitude,
     }
   } catch {
     error.value = 'Location lookup failed — check your connection (or an ad/privacy blocker) and try again.'
@@ -92,7 +103,7 @@ function useMyLocation() {
       } catch {
         // keep the coordinate label
       }
-      place.value = { name, lat: latitude }
+      place.value = { name, lat: latitude, lng: longitude }
       loading.value = false
     },
     (err) => {
@@ -138,10 +149,11 @@ const onThumbError = (e: Event) => {
 
       <p v-if="loading" class="status">Locating…</p>
       <p v-else-if="error" class="status err">{{ error }}</p>
-      <p v-else-if="place && season" class="status ok">
-        In season near <strong>{{ place.name }}</strong> — {{ SEASON_LABEL[season] }},
+      <p v-else-if="place && season && realm" class="status ok">
+        <strong>{{ place.name }}</strong> — {{ SEASON_LABEL[season] }},
         {{ hemisphere(place.lat) }} Hemisphere.
-        <span class="count">{{ results.length }} wild {{ results.length === 1 ? 'food' : 'foods' }}</span>
+        <span class="region-note">Region: {{ REALM_LABEL[realm] }}.</span>
+        <span class="count">{{ results.length }} wild {{ results.length === 1 ? 'food' : 'foods' }} in season</span>
       </p>
     </header>
 
@@ -175,8 +187,8 @@ const onThumbError = (e: Event) => {
       </li>
     </ul>
     <p v-else class="hint">
-      Foods are matched to the season for your hemisphere — a starting point for what to look for,
-      not a guarantee it grows at your exact spot.
+      Foods are matched to your region (by biogeographic realm) and the current season — a starting
+      point for what to look for, not a guarantee it grows at your exact spot.
     </p>
   </aside>
 </template>
@@ -211,7 +223,8 @@ const onThumbError = (e: Event) => {
 .status { margin: 10px 0 2px; font-size: 13px; line-height: 1.4; }
 .status.err { color: var(--warn-text); }
 .status.ok { color: var(--text); }
-.count { display: inline-block; margin-left: 4px; color: var(--text-faint); }
+.region-note { display: block; margin-top: 2px; color: var(--text-muted); }
+.count { display: block; margin-top: 2px; color: var(--text-faint); }
 .hint { padding: 16px; color: var(--text-faint); font-size: 13px; line-height: 1.5; }
 .results { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; flex: 1; }
 .empty { padding: 24px 16px; color: var(--text-faint); text-align: center; }
