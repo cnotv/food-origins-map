@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { ProduceItem } from '../data/types'
+import type { ProduceItem, Category } from '../data/types'
 import { badgeImagePath } from '../data/validators'
 import { categoryColor } from './WorldMap.vue'
+import FilterChips from './FilterChips.vue'
 import {
   foragableNow,
   currentSeasonForLat,
@@ -29,6 +30,7 @@ const SEASON_LABEL: Record<Season, string> = {
 }
 
 const query = ref('')
+const category = ref<Category | 'all'>('all')
 const loading = ref(false)
 const error = ref('')
 // The resolved place, or null until the user picks a location.
@@ -40,6 +42,12 @@ const realm = computed(() =>
 )
 const results = computed(() =>
   place.value ? foragableNow(props.items, place.value.lat, place.value.lng) : [],
+)
+// Narrow the in-season results by category (fruit, vegetable, …).
+const filtered = computed(() =>
+  category.value === 'all'
+    ? results.value
+    : results.value.filter((it) => it.category === category.value),
 )
 
 // Fetch JSON with a hard timeout so a stalled or blocked request surfaces an
@@ -153,16 +161,17 @@ const onThumbError = (e: Event) => {
         <strong>{{ place.name }}</strong> — {{ SEASON_LABEL[season] }},
         {{ hemisphere(place.lat) }} Hemisphere.
         <span class="region-note">Region: {{ REALM_LABEL[realm] }}.</span>
-        <span class="count">{{ results.length }} wild {{ results.length === 1 ? 'food' : 'foods' }} in season</span>
+        <span class="count">{{ filtered.length }} wild {{ filtered.length === 1 ? 'food' : 'foods' }} in season</span>
       </p>
+      <FilterChips v-if="place" :active="category" @change="category = $event" />
     </header>
 
     <ul v-if="place" class="results">
-      <li v-if="results.length === 0" class="empty">
-        No documented wild foods are in season here right now.
+      <li v-if="filtered.length === 0" class="empty">
+        No documented wild foods are in season here for this filter right now.
       </li>
       <li
-        v-for="item in results"
+        v-for="item in filtered"
         :key="item.id"
         class="result"
         :class="{ active: item.id === selectedId }"
@@ -220,6 +229,7 @@ const onThumbError = (e: Event) => {
 .go { flex: none; }
 .use-loc { margin-top: 8px; width: 100%; }
 .go:disabled, .use-loc:disabled { opacity: 0.5; cursor: default; }
+.forage-head :deep(.chips-row) { margin-top: 10px; }
 .status { margin: 10px 0 2px; font-size: 13px; line-height: 1.4; }
 .status.err { color: var(--warn-text); }
 .status.ok { color: var(--text); }
