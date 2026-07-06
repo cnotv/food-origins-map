@@ -2914,5 +2914,269 @@
     "artist": "Fr. Manuel Blanco (O.S.A.)",
     "license": "Public domain",
     "source": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Lansium_domesticum_Blanco1.117.png"
+  },
+  "plum": {
+    "file": "Prunus domestica coupe MHNT.jpg",
+    "artist": "Roger Culos",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Prunus_domestica_coupe_MHNT.jpg"
+  },
+  "lemon": {
+    "file": "Lemon.jpg",
+    "artist": "André Karwath aka Aka",
+    "license": "CC BY-SA 2.5",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Lemon.jpg"
+  },
+  "redcurrant": {
+    "file": "Redcurrant (Ribes rubrum) fruits.jpg",
+    "artist": "Ivar Leidus",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Redcurrant_%28Ribes_rubrum%29_fruits.jpg"
+  },
+  "kiwifruit": {
+    "file": "Kiwi (Actinidia chinensis) 1 Luc Viatour.jpg",
+    "artist": "Luc Viatour",
+    "license": "CC BY-SA 2.5",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/b/b8/Kiwi_%28Actinidia_chinensis%29_1_Luc_Viatour.jpg"
+  },
+  "papaya": {
+    "file": "Papaya - longitudinal section close-up view.jpg",
+    "artist": "Ivar Leidus",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Papaya_-_longitudinal_section_close-up_view.jpg"
+  },
+  "cupuacu": {
+    "file": "Theobroma grandiflorum, source of Cupulate Chocolate (9906147393).jpg",
+    "artist": "Dick Culbert from Gibsons, B.C., Canada",
+    "license": "CC BY 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Theobroma_grandiflorum%2C_source_of_Cupulate_Chocolate_%289906147393%29.jpg"
+  },
+  "salak": {
+    "file": "Salak (Salacca zalacca), 2015-05-17.jpg",
+    "artist": "Crisco 1492",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/9/92/Salak_%28Salacca_zalacca%29%2C_2015-05-17.jpg"
+  },
+  "casaba-melon": {
+    "file": "Galia melon in a supermarket.jpg",
+    "artist": "Tomwsulcer",
+    "license": "CC0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Galia_melon_in_a_supermarket.jpg"
+  },
+  "burdock-root": {
+    "file": "Arctium tomentosum - Keila.jpg",
+    "artist": "Ivar Leidus",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Arctium_tomentosum_-_Keila.jpg"
+  },
+  "arrowroot": {
+    "file": "Arrowroot (Maranta arundinacea) Boiled.jpg",
+    "artist": "Dr. Chinchu C.",
+    "license": "CC BY 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/d/dd/Arrowroot_%28Maranta_arundinacea%29_Boiled.jpg"
+  },
+  "kohlrabi": {
+    "file": "2018-06-01 (131) Leaves of young Brassica oleracea var. gongylodes (Kohlrabi) at Bichlhäusl in Frankenfels, Austria.jpg",
+    "artist": "GT1976",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/f/f7/2018-06-01_%28131%29_Leaves_of_young_Brassica_oleracea_var._gongylodes_%28Kohlrabi%29_at_Bichlh%C3%A4usl_in_Frankenfels%2C_Austria.jpg"
+  },
+  "biriba": {
+    "file": "Annona purpurea (3) Proporcionado por Rovin Alba.jpg",
+    "artist": "Rovin Laudin Alba Torres",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/3/32/Annona_purpurea_%283%29_Proporcionado_por_Rovin_Alba.jpg"
+  },
+  "epimedium-fern": {
+    "file": "Matteuccia struthiopteris fiddleheads.jpg",
+    "artist": "The Cosmonaut",
+    "license": "CC BY-SA 2.5 ca",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/5/53/Matteuccia_struthiopteris_fiddleheads.jpg"
+  },
+  "sunflower__fruit": {
+    "file": "Sunflower with seeds 02.jpg",
+    "artist": "Kritzolina",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/0/03/Sunflower_with_seeds_02.jpg"
+  },
+  "sunflower__leaves": {
+    "file": "Sunflower leaf structure.jpg",
+    "artist": "Multimotyl",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/62/Sunflower_leaf_structure.jpg"
+  },
+  "sunflower__seed": {
+    "file": "Whole Sunflower seed.jpg",
+    "artist": "Bobyellow",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/1/13/Whole_Sunflower_seed.jpg"
+  },
+  "sunflower__tree": {
+    "file": "Sunflower head 2015 G1.jpg",
+    "artist": "George Chernilevsky",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/c/c0/Sunflower_head_2015_G1.jpg"
+  },
+  "almond__fruit": {
+    "file": "Almonds - in shell, shell cracked open, shelled, blanched.jpg",
+    "artist": "Ivar Leidus",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/3/37/Almonds_-_in_shell%2C_shell_cracked_open%2C_shelled%2C_blanched.jpg"
+  },
+  "almond__leaves": {
+    "file": "Leaves of the Indian almond plant.jpg",
+    "artist": "Seimawu Sugri Seidu",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/4/42/Leaves_of_the_Indian_almond_plant.jpg"
+  },
+  "almond__seed": {
+    "file": "Almond with two kernels.jpg",
+    "artist": "Ivar Leidus",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/76/Almond_with_two_kernels.jpg"
+  },
+  "almond__tree": {
+    "file": "Terminalia catappa 1a 02.jpg",
+    "artist": "Rasitha nellickal",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Terminalia_catappa_1a_02.jpg"
+  },
+  "apple__fruit": {
+    "file": "Red Apple.jpg",
+    "artist": "Abhijit Tembhekar from Mumbai, India",
+    "license": "CC BY 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/1/15/Red_Apple.jpg"
+  },
+  "apple__leaves": {
+    "file": "Leaves Water Apple Valparai Feb26 A7CR 10137.jpg",
+    "artist": "This Photo was taken by Timothy A. Gonsalves.  Feel free to use my photos, but please mention me as the author.  I would much appreciate if you send me an email tagooty@yahoo.com or write on my talk page, for my information.  Please contact me before commercial use.\n\n\n\nPlease do not upload an edited image here without consulting me.  I would like to make corrections only at my own source to ensure that the changes improve the image and are preserved.Otherwise you may upload an edited image with a new name. Please use one of the templates derivative or extract.",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/79/Leaves_Water_Apple_Valparai_Feb26_A7CR_10137.jpg"
+  },
+  "apple__seed": {
+    "file": "Apfelkern3.JPG",
+    "artist": "Böhringer Friedrich",
+    "license": "CC BY-SA 2.5",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/73/Apfelkern3.JPG"
+  },
+  "apple__tree": {
+    "file": "Rotten apple under the tree.jpg",
+    "artist": "Sally V",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Rotten_apple_under_the_tree.jpg"
+  },
+  "walnut__fruit": {
+    "file": "Juglans regia 2009 G2.jpg",
+    "artist": "George Chernilevsky",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Juglans_regia_2009_G2.jpg"
+  },
+  "walnut__leaves": {
+    "file": "Walnut Leaf translucency under natural sunlight.jpg",
+    "artist": "Ale Eyestar",
+    "license": "CC BY 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/9/9e/Walnut_Leaf_translucency_under_natural_sunlight.jpg"
+  },
+  "walnut__seed": {
+    "file": "Walnuts - whole and open with halved kernel.jpg",
+    "artist": "Ivar Leidus",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Walnuts_-_whole_and_open_with_halved_kernel.jpg"
+  },
+  "walnut__tree": {
+    "file": "2026-03-07 D500-2006 Achim-Lammerts Juglans-regia.jpg",
+    "artist": "Achim Lammerts (Syntaxys)",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/f/f5/2026-03-07_D500-2006_Achim-Lammerts_Juglans-regia.jpg"
+  },
+  "blackberry__fruit": {
+    "file": "Blackberries (Rubus fruticosus).jpg",
+    "artist": "Ivar Leidus",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Blackberries_%28Rubus_fruticosus%29.jpg"
+  },
+  "blackberry__leaves": {
+    "file": "Blackberry vine.jpg",
+    "artist": "Violetcabra",
+    "license": "CC0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/77/Blackberry_vine.jpg"
+  },
+  "blackberry__seed": {
+    "file": "Blackberry fruits 2008 G1.jpg",
+    "artist": "George Chernilevsky",
+    "license": "Public domain",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/e/e9/Blackberry_fruits_2008_G1.jpg"
+  },
+  "blackberry__tree": {
+    "file": "Black Mulberry Female Flowers.jpg",
+    "artist": "JJ Harrison (https://www.jjharrison.com.au/)",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Black_Mulberry_Female_Flowers.jpg"
+  },
+  "elderberry__fruit": {
+    "file": "American elderberry (Sambucus canadensis) (23663427868).jpg",
+    "artist": "Rison Thumboor from Thrissur, India",
+    "license": "CC BY 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/5/54/American_elderberry_%28Sambucus_canadensis%29_%2823663427868%29.jpg"
+  },
+  "elderberry__leaves": {
+    "file": "European elderberry (Sambucus nigra) leaves and bark, Ponte de Sor, Portugal (approx. GPS location) julesvernex2.jpg",
+    "artist": "Jules Verne Times Two",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/4/41/European_elderberry_%28Sambucus_nigra%29_leaves_and_bark%2C_Ponte_de_Sor%2C_Portugal_%28approx._GPS_location%29_julesvernex2.jpg"
+  },
+  "elderberry__tree": {
+    "file": "Echt judasoor (Auricularia auricula-judae) op een stam van een vlier. 15-02-2024. (actm.) 15-02-2024. (actm.).jpg",
+    "artist": "Agnes Monkelbaan",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/8/84/Echt_judasoor_%28Auricularia_auricula-judae%29_op_een_stam_van_een_vlier._15-02-2024._%28actm.%29_15-02-2024._%28actm.%29.jpg"
+  },
+  "hazelnut__fruit": {
+    "file": "Hazelnuts.jpg",
+    "artist": "Fir0002 at English Wikipedia",
+    "license": "CC BY-SA 3.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Hazelnuts.jpg"
+  },
+  "hazelnut__leaves": {
+    "file": "Hazelnut leaf, Rind, Armenia.jpg",
+    "artist": "Ավետիսյան91",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/3/33/Hazelnut_leaf%2C_Rind%2C_Armenia.jpg"
+  },
+  "hazelnut__seed": {
+    "file": "Unshelled hazelnuts, İç fındık 01.jpg",
+    "artist": "Zeynel Cebeci",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Unshelled_hazelnuts%2C_%C4%B0%C3%A7_f%C4%B1nd%C4%B1k_01.jpg"
+  },
+  "hazelnut__tree": {
+    "file": "Hazelnuts (Corylus avellana).jpg",
+    "artist": "Ivar Leidus",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/3/31/Hazelnuts_%28Corylus_avellana%29.jpg"
+  },
+  "chestnut__fruit": {
+    "file": "Gespietste kastanje 13-01-2022. (d.j.b).jpg",
+    "artist": "Dominicus Johannes Bergsma",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/0/04/Gespietste_kastanje_13-01-2022._%28d.j.b%29.jpg"
+  },
+  "chestnut__leaves": {
+    "file": "Close wing puddling behavior of Iambrix salsala (Moore, (1866)) - Chestnut Bob.jpg",
+    "artist": "Sarpitabose",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Close_wing_puddling_behavior_of_Iambrix_salsala_%28Moore%2C_%281866%29%29_-_Chestnut_Bob.jpg"
+  },
+  "chestnut__seed": {
+    "file": "Sweet chestnut seed pods - geograph.org.uk - 6628052.jpg",
+    "artist": "Philip Halling",
+    "license": "CC BY-SA 2.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/a/ac/Sweet_chestnut_seed_pods_-_geograph.org.uk_-_6628052.jpg"
+  },
+  "chestnut__tree": {
+    "file": "Gebarsten bolster van een paardenkastanje (Aesculus) 13-10-2022 (d.j.b.) 02.jpg",
+    "artist": "Dominicus Johannes Bergsma",
+    "license": "CC BY-SA 4.0",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/9/9e/Gebarsten_bolster_van_een_paardenkastanje_%28Aesculus%29_13-10-2022_%28d.j.b.%29_02.jpg"
   }
 }

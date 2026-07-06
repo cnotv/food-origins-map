@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { mkdir, writeFile, access } from 'node:fs/promises'
+import { mkdir, writeFile, readFile, access } from 'node:fs/promises'
 import sharp from 'sharp'
 import { produce } from '../src/data/produce.ts'
 
@@ -97,6 +97,12 @@ async function fetchImageInfoBatch(files) {
 // (e.g. "Ugu (Fluted Pumpkin)") and stray punctuation that hurts search recall.
 const searchQuery = (name) => name.replace(/\([^)]*\)/g, '').replace(/['"’]/g, '').trim()
 
+// Better Commons search terms for items whose display name searches poorly.
+const SEARCH_OVERRIDE = {
+  'epimedium-fern': 'Ostrich fern',
+  biriba: 'Rollinia deliciosa',
+}
+
 // Fallback: search Commons for a photo matching the item's name and return the
 // first raster (JPEG/PNG) result, preserving the search engine's relevance order.
 async function searchCommonsImage(query) {
@@ -145,7 +151,12 @@ async function main() {
   const dryRun = process.argv.includes('--dry-run')
   const force = process.argv.includes('--force')
   if (!dryRun) await mkdir(IMAGES_DIR, { recursive: true })
-  const attributions = {}
+  // Start from the existing attributions so an incremental run (which skips
+  // items whose images already exist) preserves their credits instead of
+  // wiping the file down to only the newly-processed items.
+  const attributions = await readFile(join(IMAGES_DIR, 'attributions.json'), 'utf8')
+    .then(JSON.parse)
+    .catch(() => ({}))
   const failures = []
 
   const infoByFile = await resolveAllInfo(produce)
@@ -163,7 +174,7 @@ async function main() {
       let info = infoByFile.get(item.commonsFile)
       let sourceFile = item.commonsFile
       if (!info) {
-        info = await searchCommonsImage(searchQuery(item.name))
+        info = await searchCommonsImage(SEARCH_OVERRIDE[item.id] ?? searchQuery(item.name))
         if (info) sourceFile = info.file
         await sleep(300)
       }
@@ -174,8 +185,9 @@ async function main() {
         continue
       }
       const buf = await downloadWithRetry(info.url)
-      await sharp(buf).resize(128, 128, { fit: 'cover', position: 'centre' }).webp({ quality: 82 }).toFile(badge)
-      await sharp(buf).resize(640, null, { fit: 'inside' }).webp({ quality: 80 }).toFile(hero)
+      const src = () => sharp(buf, { limitInputPixels: false })
+      await src().resize(128, 128, { fit: 'cover', position: 'centre' }).webp({ quality: 82 }).toFile(badge)
+      await src().resize(640, null, { fit: 'inside' }).webp({ quality: 80 }).toFile(hero)
       console.log(`done ${item.id}`)
       await sleep(600)
     } catch (err) {

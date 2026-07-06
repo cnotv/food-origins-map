@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { ProduceItem } from '../data/types'
-import { heroImagePath } from '../data/validators'
 import { getFieldGuide } from '../data/guide'
 import NutritionTable from './NutritionTable.vue'
 import MiniMap from './MiniMap.vue'
+import ImageGallery from './ImageGallery.vue'
 import attributions from '../../public/images/attributions.json'
 
 const props = defineProps<{ item: ProduceItem | null }>()
@@ -42,12 +42,11 @@ const attribution = computed(() =>
     ? (attributions as Record<string, { artist: string; license: string }>)[props.item.id]
     : undefined,
 )
-const onHeroError = (e: Event) => ((e.target as HTMLElement).style.visibility = 'hidden')
 </script>
 <template>
   <aside v-if="item" class="side-panel">
     <button class="close" aria-label="Close" @click="$emit('close')">✕</button>
-    <img class="hero" :src="heroImagePath(item.id)" :alt="item.name" @error="onHeroError" />
+    <ImageGallery :item="item" />
     <div class="body">
       <span class="tag">{{ CATEGORY_LABEL[item.category] }}</span>
       <h2>{{ item.name }}</h2>
