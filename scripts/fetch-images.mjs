@@ -101,7 +101,12 @@ const searchQuery = (name) => name.replace(/\([^)]*\)/g, '').replace(/['"’]/g,
 const SEARCH_OVERRIDE = {
   'epimedium-fern': 'Ostrich fern',
   biriba: 'Rollinia deliciosa',
+  purslane: 'Portulaca oleracea',
 }
+
+// Items whose declared commonsFile is unusable (e.g. a corrupt/truncated source
+// that fails to decode); force them through the name-search fallback instead.
+const FORCE_SEARCH = new Set(['purslane'])
 
 // Fallback: search Commons for a photo matching the item's name and return the
 // first raster (JPEG/PNG) result, preserving the search engine's relevance order.
@@ -171,7 +176,7 @@ async function main() {
       }
       // Prefer the item's exact commonsFile; if it didn't resolve, fall back to
       // a Commons name search so every item still gets a real image.
-      let info = infoByFile.get(item.commonsFile)
+      let info = FORCE_SEARCH.has(item.id) ? undefined : infoByFile.get(item.commonsFile)
       let sourceFile = item.commonsFile
       if (!info) {
         info = await searchCommonsImage(SEARCH_OVERRIDE[item.id] ?? searchQuery(item.name))

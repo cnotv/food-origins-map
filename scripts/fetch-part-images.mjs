@@ -113,9 +113,11 @@ async function main() {
         }
         used.add(hit.file)
         const buf = await downloadWithRetry(hit.url)
+        // Small webp: the whole image set is kept under a tight size budget, so
+        // parts are thumbnail-sized (they display at ~130-190px in the gallery).
         await sharp(buf, { limitInputPixels: false })
-          .resize(800, 600, { fit: 'inside' })
-          .webp({ quality: 80 })
+          .resize(200, 200, { fit: 'inside' })
+          .webp({ quality: 44 })
           .toFile(existing)
         attributions[`${item.id}__${part}`] = {
           file: hit.file,
