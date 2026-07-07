@@ -11,6 +11,8 @@ supports zoom, pan, marker clustering, and filtering by category.
 
 - **[User Guide](docs/USER_GUIDE.md)** — what the app does and how to use it.
 - **[Architecture](docs/ARCHITECTURE.md)** — stack, data flow, and conventions.
+- **[Data & Photos](docs/DATA_AND_PHOTOS.md)** — how the map is generated, and
+  how the dataset and Wikimedia photos were collected.
 - **[Tutorial](docs/TUTORIAL.md)** — build a clustered map whose points split
   apart with transitions.
 

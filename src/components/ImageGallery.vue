@@ -13,7 +13,7 @@ const PARTS: { key: ImagePart; label: string }[] = [
   { key: 'fruit', label: 'Fruit' },
   { key: 'leaves', label: 'Leaves' },
   { key: 'seed', label: 'Seed' },
-  { key: 'tree', label: 'Plant' },
+  { key: 'tree', label: 'Tree/Plant' },
 ]
 
 // Candidate images: the main photo plus each botanical part. Any that 404 are

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import type { ProduceItem } from '../data/types'
 import { getFieldGuide } from '../data/guide'
 import NutritionTable from './NutritionTable.vue'
@@ -7,8 +7,13 @@ import MiniMap from './MiniMap.vue'
 import ImageGallery from './ImageGallery.vue'
 import attributions from '../../public/images/attributions.json'
 
-const props = defineProps<{ item: ProduceItem | null }>()
-defineEmits<{ close: [] }>()
+const tabs = ['About', 'Field guide', 'Recipes', 'Varieties'] as const
+type Tab = (typeof tabs)[number]
+
+const props = withDefaults(defineProps<{ item: ProduceItem | null; tab?: Tab }>(), {
+  tab: 'About',
+})
+defineEmits<{ close: []; 'update:tab': [Tab] }>()
 
 const CATEGORY_LABEL: Record<string, string> = {
   fruit: 'Fruit',
@@ -26,15 +31,6 @@ const RAW_LABEL = {
   no: 'No — must be cooked or processed',
   caution: 'With caution',
 } as const
-
-const tabs = ['About', 'Field guide', 'Recipes', 'Varieties'] as const
-type Tab = (typeof tabs)[number]
-const activeTab = ref<Tab>('About')
-// Reset to the first tab whenever a different item is opened.
-watch(
-  () => props.item?.id,
-  () => (activeTab.value = 'About'),
-)
 
 const guide = computed(() => (props.item ? getFieldGuide(props.item.id) : undefined))
 const attribution = computed(() =>
@@ -58,17 +54,17 @@ const attribution = computed(() =>
           v-for="t in tabs"
           :key="t"
           class="tab"
-          :class="{ active: activeTab === t }"
+          :class="{ active: tab === t }"
           role="tab"
-          :aria-selected="activeTab === t"
-          @click="activeTab = t"
+          :aria-selected="tab === t"
+          @click="$emit('update:tab', t)"
         >
           {{ t }}
         </button>
       </nav>
 
       <!-- About -->
-      <section v-show="activeTab === 'About'" class="tab-panel">
+      <section v-show="tab === 'About'" class="tab-panel">
         <MiniMap :item="item" />
         <p class="story">{{ item.story }}</p>
         <NutritionTable :nutrition="item.nutrition" />
@@ -81,7 +77,7 @@ const attribution = computed(() =>
       </section>
 
       <!-- Field guide -->
-      <section v-show="activeTab === 'Field guide'" class="tab-panel">
+      <section v-show="tab === 'Field guide'" class="tab-panel">
         <template v-if="guide && guide.harvestSeason">
           <dl class="facts">
             <dt>Harvest time</dt>
@@ -108,7 +104,7 @@ const attribution = computed(() =>
       </section>
 
       <!-- Recipes -->
-      <section v-show="activeTab === 'Recipes'" class="tab-panel">
+      <section v-show="tab === 'Recipes'" class="tab-panel">
         <ul v-if="guide && guide.recipes?.length" class="list">
           <li v-for="r in guide.recipes" :key="r">{{ r }}</li>
         </ul>
@@ -116,7 +112,7 @@ const attribution = computed(() =>
       </section>
 
       <!-- Varieties -->
-      <section v-show="activeTab === 'Varieties'" class="tab-panel">
+      <section v-show="tab === 'Varieties'" class="tab-panel">
         <ul v-if="guide && guide.varieties?.length" class="list">
           <li v-for="v in guide.varieties" :key="v">{{ v }}</li>
         </ul>

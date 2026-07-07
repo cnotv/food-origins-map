@@ -25,6 +25,31 @@ const exists = (p) => access(p).then(() => true, () => false)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const searchQuery = (name) => name.replace(/\([^)]*\)/g, '').replace(/['"’]/g, '').trim()
 
+// Per-part search terms with added botanical specificity, plus exclusions of
+// common confusers (animals named after plants, stamps, logos, drawings) so a
+// search like "chestnut leaves" doesn't return a butterfly called "Chestnut Bob".
+const EXCLUDE =
+  ' -butterfly -moth -skipper -insect -bug -beetle -caterpillar -bird -fish -stamp' +
+  ' -coin -banknote -logo -flag -map -coat -illustration -drawing -painting -diagram'
+const PART_QUERY = {
+  fruit: (n) => `${n} fruit ripe plant${EXCLUDE}`,
+  leaves: (n) => `${n} leaf foliage plant${EXCLUDE}`,
+  seed: (n) => `${n} seeds${EXCLUDE}`,
+  tree: (n) => `${n} tree plant habit${EXCLUDE}`,
+}
+
+// A candidate is more trustworthy if its filename mentions the plant, so prefer
+// those over unrelated top hits when picking an unused image.
+function pickCandidate(candidates, nameTokens, used) {
+  const relevant = candidates.filter((c) => {
+    const t = c.file.toLowerCase()
+    return nameTokens.some((tok) => tok.length > 2 && t.includes(tok))
+  })
+  return (
+    relevant.find((c) => !used.has(c.file)) ?? candidates.find((c) => !used.has(c.file)) ?? null
+  )
+}
+
 // Returns raster (jpg/png) candidates for a query, in the search engine's
 // relevance order, so the caller can pick the first one it hasn't used yet.
 async function searchCommonsCandidates(query) {
@@ -97,15 +122,14 @@ async function main() {
     // Track files already used by this item so each part gets a distinct photo
     // (keyword search often ranks the same dominant image first for every part).
     const used = new Set()
+    const nameTokens = searchQuery(item.name).toLowerCase().split(/\s+/)
     for (const part of PARTS) {
       const existing = join(IMAGES_DIR, `${item.id}-${part}.webp`)
       if (await exists(existing)) continue
-      // "tree" reads oddly for herbs/vines; ask for the plant instead.
-      const term = part === 'tree' ? 'plant' : part
       try {
-        const candidates = await searchCommonsCandidates(`${searchQuery(item.name)} ${term}`)
+        const candidates = await searchCommonsCandidates(PART_QUERY[part](searchQuery(item.name)))
         await sleep(300)
-        const hit = candidates.find((c) => !used.has(c.file))
+        const hit = pickCandidate(candidates, nameTokens, used)
         if (!hit) {
           missed++
           console.log(`miss ${item.id}-${part}`)
@@ -113,11 +137,11 @@ async function main() {
         }
         used.add(hit.file)
         const buf = await downloadWithRetry(hit.url)
-        // Small webp: the whole image set is kept under a tight size budget, so
-        // parts are thumbnail-sized (they display at ~130-190px in the gallery).
+        // Fetched at a larger size than before; optimize-images.mjs re-encodes
+        // the whole set down to the final size budget afterwards.
         await sharp(buf, { limitInputPixels: false })
-          .resize(200, 200, { fit: 'inside' })
-          .webp({ quality: 44 })
+          .resize(440, 440, { fit: 'inside' })
+          .webp({ quality: 62 })
           .toFile(existing)
         attributions[`${item.id}__${part}`] = {
           file: hit.file,

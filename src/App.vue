@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import WorldMap from './components/WorldMap.vue'
 import SidePanel from './components/SidePanel.vue'
 import SearchView from './components/SearchView.vue'
@@ -12,6 +12,20 @@ const selected = ref<ProduceItem | null>(null)
 const activeFilter = ref<Category | 'all'>('all')
 const searchOpen = ref(false)
 const forageOpen = ref(false)
+
+// Detail-panel tab, kept here so it can be reflected in the URL.
+const TAB_SLUGS = {
+  About: 'about',
+  'Field guide': 'field-guide',
+  Recipes: 'recipes',
+  Varieties: 'varieties',
+} as const
+type Tab = keyof typeof TAB_SLUGS
+const SLUG_TABS = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, k])) as Record<
+  string,
+  Tab
+>
+const detailTab = ref<Tab>('About')
 
 // Search and Forage share the same left slot, so only one is open at a time.
 function toggleSearch() {
@@ -29,6 +43,46 @@ const filteredItems = computed(() =>
 
 const onSearchSelect = (item: ProduceItem) => {
   selected.value = item
+  detailTab.value = 'About'
+}
+
+// --- URL query-parameter sync ---------------------------------------------
+// Restore state from the URL on load, and keep the URL in step with the open
+// panel (?view=search|forage), the selected item (?item=<id>) and its active
+// tab (?tab=<slug>), so views are shareable and bookmarkable.
+function applyUrl() {
+  const p = new URLSearchParams(location.search)
+  const view = p.get('view')
+  searchOpen.value = view === 'search'
+  forageOpen.value = view === 'forage'
+  const id = p.get('item')
+  selected.value = (id && produce.find((it) => it.id === id)) || null
+  const tab = p.get('tab')
+  detailTab.value = (tab && SLUG_TABS[tab]) || 'About'
+}
+
+let syncing = false
+watch(
+  [searchOpen, forageOpen, selected, detailTab],
+  () => {
+    if (syncing) return
+    const p = new URLSearchParams()
+    if (searchOpen.value) p.set('view', 'search')
+    else if (forageOpen.value) p.set('view', 'forage')
+    if (selected.value) {
+      p.set('item', selected.value.id)
+      if (detailTab.value !== 'About') p.set('tab', TAB_SLUGS[detailTab.value])
+    }
+    const qs = p.toString()
+    history.replaceState(null, '', qs ? `?${qs}` : location.pathname)
+  },
+  { deep: false },
+)
+
+function onPopState() {
+  syncing = true
+  applyUrl()
+  syncing = false
 }
 
 // GitHub's new-issue form pre-filled with the current app state.
@@ -58,8 +112,15 @@ const onKey = (e: KeyboardEvent) => {
   else if (searchOpen.value) searchOpen.value = false
   else if (forageOpen.value) forageOpen.value = false
 }
-onMounted(() => window.addEventListener('keydown', onKey))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+onMounted(() => {
+  applyUrl()
+  window.addEventListener('keydown', onKey)
+  window.addEventListener('popstate', onPopState)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  window.removeEventListener('popstate', onPopState)
+})
 </script>
 <template>
   <div class="app-shell">
@@ -103,7 +164,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       @select="onSearchSelect"
       @close="forageOpen = false"
     />
-    <SidePanel :item="selected" @close="selected = null" />
+    <SidePanel
+      :item="selected"
+      :tab="detailTab"
+      @update:tab="detailTab = $event"
+      @close="selected = null"
+    />
   </div>
 </template>
 <style scoped>

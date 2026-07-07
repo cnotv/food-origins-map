@@ -13,17 +13,18 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIR = join(__dirname, '..', 'public', 'images')
 
 const maxArg = process.argv.indexOf('--max-mb')
-const BUDGET = (maxArg !== -1 ? Number(process.argv[maxArg + 1]) : 9.5) * 1024 * 1024
+const BUDGET = (maxArg !== -1 ? Number(process.argv[maxArg + 1]) : 24) * 1024 * 1024
 
 const BADGE = { w: 128, q: 66 }
-// Tried in order; the first that brings the total under budget wins.
+// Tried in order; the first that brings the total under budget wins. Photos are
+// roughly double the previous size (~360px) for a sharper gallery/slideshow.
 const PHOTO_SPECS = [
-  { w: 200, q: 44 },
-  { w: 180, q: 42 },
-  { w: 164, q: 40 },
-  { w: 148, q: 38 },
-  { w: 132, q: 36 },
-  { w: 120, q: 34 },
+  { w: 360, q: 52 },
+  { w: 340, q: 50 },
+  { w: 320, q: 48 },
+  { w: 300, q: 46 },
+  { w: 280, q: 44 },
+  { w: 256, q: 42 },
 ]
 
 const isBadge = (f) => f.endsWith('-badge.webp')
