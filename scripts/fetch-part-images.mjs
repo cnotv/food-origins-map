@@ -1,41 +1,46 @@
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { mkdir, writeFile, readFile, access } from 'node:fs/promises'
+import { mkdir, writeFile, readFile, rename, access } from 'node:fs/promises'
 import sharp from 'sharp'
 import { produce } from '../src/data/produce.ts'
 import { commonsSearchUrl } from './fetch-images.mjs'
 
 // Fetches up to four botanical part photos per item — fruit, leaves, seed and
-// tree/plant — from Wikimedia Commons, saved as `${id}-${part}.webp`. Resumable
-// (skips parts that already exist) and rate-limited. Attributions are merged
-// into public/images/attributions.json under `${id}__${part}` keys.
+// tree/plant — from Wikimedia Commons, saved as `${id}-${part}.webp`. Searches
+// by the item's scientific name (from species.json) when known, so results are
+// far more likely to be the right species. Resumable, rate-limited; attributions
+// merged into attributions.json under `${id}__${part}` keys. Writes are atomic
+// (temp file + rename) so an in-place --force run never leaves a missing/partial
+// image.
 //
 // Usage:
-//   vite-node scripts/fetch-part-images.mjs                 # all items
+//   vite-node scripts/fetch-part-images.mjs                 # all items (skip existing)
+//   vite-node scripts/fetch-part-images.mjs --force         # re-fetch, overwrite in place
 //   vite-node scripts/fetch-part-images.mjs --ids a,b,c     # only these ids
 //   vite-node scripts/fetch-part-images.mjs --limit 20      # first N items
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const IMAGES_DIR = join(__dirname, '..', 'public', 'images')
 const ATTR_FILE = join(IMAGES_DIR, 'attributions.json')
+const SPECIES_FILE = join(IMAGES_DIR, 'species.json')
 const UA = 'food-origins-map/1.0 (https://github.com/cnotv/food-origins-map; build script)'
+const FORCE = process.argv.includes('--force')
 
 const PARTS = ['fruit', 'leaves', 'seed', 'tree']
 const exists = (p) => access(p).then(() => true, () => false)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const searchQuery = (name) => name.replace(/\([^)]*\)/g, '').replace(/['"’]/g, '').trim()
 
-// Per-part search terms with added botanical specificity, plus exclusions of
-// common confusers (animals named after plants, stamps, logos, drawings) so a
-// search like "chestnut leaves" doesn't return a butterfly called "Chestnut Bob".
-const EXCLUDE =
-  ' -butterfly -moth -skipper -insect -bug -beetle -caterpillar -bird -fish -stamp' +
-  ' -coin -banknote -logo -flag -map -coat -illustration -drawing -painting -diagram'
+// Per-part search terms. Commons full-text search ANDs the words, so extra
+// qualifiers drastically cut recall — keep it to the name plus one part word and
+// let pickCandidate() below handle relevance by preferring filenames that
+// mention the plant. A couple of light exclusions drop the worst confusers
+// (a butterfly called "Chestnut Bob") without hurting recall much.
 const PART_QUERY = {
-  fruit: (n) => `${n} fruit ripe plant${EXCLUDE}`,
-  leaves: (n) => `${n} leaf foliage plant${EXCLUDE}`,
-  seed: (n) => `${n} seeds${EXCLUDE}`,
-  tree: (n) => `${n} tree plant habit${EXCLUDE}`,
+  fruit: (n) => `${n} fruit`,
+  leaves: (n) => `${n} leaves -butterfly -moth`,
+  seed: (n) => `${n} seeds`,
+  tree: (n) => `${n} plant -butterfly -moth`,
 }
 
 // A candidate is more trustworthy if its filename mentions the plant, so prefer
@@ -114,20 +119,35 @@ function selectItems() {
 async function main() {
   await mkdir(IMAGES_DIR, { recursive: true })
   const attributions = await readFile(ATTR_FILE, 'utf8').then(JSON.parse).catch(() => ({}))
+  const species = await readFile(SPECIES_FILE, 'utf8').then(JSON.parse).catch(() => ({}))
   const items = selectItems()
   let added = 0
   let missed = 0
 
   for (const item of items) {
+    // Search by scientific name when known — far more precise than the common
+    // name. Fall back to the display name otherwise.
+    const sci = species[item.id]
+    const searchName = sci || searchQuery(item.name)
     // Track files already used by this item so each part gets a distinct photo
-    // (keyword search often ranks the same dominant image first for every part).
+    // (search often ranks the same dominant image first for every part).
     const used = new Set()
-    const nameTokens = searchQuery(item.name).toLowerCase().split(/\s+/)
+    const nameTokens = `${sci ?? ''} ${searchQuery(item.name)}`.toLowerCase().split(/\s+/)
     for (const part of PARTS) {
       const existing = join(IMAGES_DIR, `${item.id}-${part}.webp`)
-      if (await exists(existing)) continue
+      // Skip parts already at current resolution so a re-run only upgrades the
+      // remaining low-res ones (a resumable upgrade). A leftover 180px file from
+      // an earlier pass is below the threshold and gets re-fetched. --force redoes
+      // everything regardless.
+      if ((await exists(existing)) && !FORCE) {
+        const w = await sharp(existing)
+          .metadata()
+          .then((m) => m.width || 0)
+          .catch(() => 0)
+        if (w >= 260) continue
+      }
       try {
-        const candidates = await searchCommonsCandidates(PART_QUERY[part](searchQuery(item.name)))
+        const candidates = await searchCommonsCandidates(PART_QUERY[part](searchName))
         await sleep(300)
         const hit = pickCandidate(candidates, nameTokens, used)
         if (!hit) {
@@ -137,12 +157,15 @@ async function main() {
         }
         used.add(hit.file)
         const buf = await downloadWithRetry(hit.url)
-        // Fetched at a larger size than before; optimize-images.mjs re-encodes
-        // the whole set down to the final size budget afterwards.
+        // Fetched larger than final; optimize-images.mjs re-encodes the whole set
+        // down to the size budget afterwards. Written atomically (temp + rename)
+        // so an in-place --force run never leaves a missing or partial file.
+        const tmp = `${existing}.tmp`
         await sharp(buf, { limitInputPixels: false })
-          .resize(440, 440, { fit: 'inside' })
-          .webp({ quality: 62 })
-          .toFile(existing)
+          .resize(520, 520, { fit: 'inside' })
+          .webp({ quality: 66 })
+          .toFile(tmp)
+        await rename(tmp, existing)
         attributions[`${item.id}__${part}`] = {
           file: hit.file,
           artist: hit.artist,

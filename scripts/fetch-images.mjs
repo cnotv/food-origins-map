@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { mkdir, writeFile, readFile, access } from 'node:fs/promises'
+import { mkdir, writeFile, readFile, rename, access } from 'node:fs/promises'
 import sharp from 'sharp'
 import { produce } from '../src/data/produce.ts'
 
@@ -191,8 +191,12 @@ async function main() {
       }
       const buf = await downloadWithRetry(info.url)
       const src = () => sharp(buf, { limitInputPixels: false })
-      await src().resize(128, 128, { fit: 'cover', position: 'centre' }).webp({ quality: 82 }).toFile(badge)
-      await src().resize(640, null, { fit: 'inside' }).webp({ quality: 80 }).toFile(hero)
+      // Atomic writes (temp + rename) so an in-place --force run never leaves a
+      // partial or empty file if encoding/writing is interrupted.
+      await src().resize(200, 200, { fit: 'cover', position: 'centre' }).webp({ quality: 84 }).toFile(`${badge}.tmp`)
+      await rename(`${badge}.tmp`, badge)
+      await src().resize(640, null, { fit: 'inside' }).webp({ quality: 80 }).toFile(`${hero}.tmp`)
+      await rename(`${hero}.tmp`, hero)
       console.log(`done ${item.id}`)
       await sleep(600)
     } catch (err) {
