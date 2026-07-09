@@ -4,6 +4,7 @@ import L from 'leaflet'
 import type { ProduceItem } from '../data/types'
 import { categoryColor } from './WorldMap.vue'
 import { addBasemap } from '../composables/basemap'
+import { regionBounds } from '../data/regions'
 
 const props = defineProps<{ item: ProduceItem }>()
 
@@ -21,13 +22,39 @@ function draw(item: ProduceItem) {
   const { lat, lng } = item.origin
   const color = categoryColor(item.category)
   layerGroup.clearLayers()
-  L.circle([lat, lng], {
-    radius: 750_000,
-    color,
-    weight: 1.5,
-    fillColor: color,
-    fillOpacity: 0.15,
-  }).addTo(layerGroup)
+
+  // When the origin text names broad regions (e.g. "Europe & western Asia"),
+  // shade and frame that whole area so the map actually shows it — not just a
+  // radius around the single origin point.
+  const bounds = regionBounds(item.origin.region, item.origin)
+  if (bounds) {
+    const [s, w, n, e] = bounds
+    L.rectangle(
+      [
+        [s, w],
+        [n, e],
+      ],
+      { color, weight: 1, fillColor: color, fillOpacity: 0.12 },
+    ).addTo(layerGroup)
+    map.fitBounds(
+      [
+        [s, w],
+        [n, e],
+      ],
+      { padding: [12, 12] },
+    )
+  } else {
+    // No recognised region: fall back to a radius around the origin.
+    L.circle([lat, lng], {
+      radius: 750_000,
+      color,
+      weight: 1.5,
+      fillColor: color,
+      fillOpacity: 0.15,
+    }).addTo(layerGroup)
+    map.setView([lat, lng], 3)
+  }
+
   L.circleMarker([lat, lng], {
     radius: 5,
     color: '#fff',
@@ -35,7 +62,6 @@ function draw(item: ProduceItem) {
     fillColor: color,
     fillOpacity: 1,
   }).addTo(layerGroup)
-  map.setView([lat, lng], 3)
   nextTick(() => map?.invalidateSize())
 }
 
