@@ -108,9 +108,11 @@ const SEARCH_OVERRIDE = {
 // that fails to decode); force them through the name-search fallback instead.
 const FORCE_SEARCH = new Set(['purslane'])
 
-// Fallback: search Commons for a photo matching the item's name and return the
-// first raster (JPEG/PNG) result, preserving the search engine's relevance order.
-async function searchCommonsImage(query) {
+// Fallback: search Commons for a photo matching the query. `preferTokens` (e.g.
+// scientific-name words) is used to avoid fuzzy mismatches — Commons ranks
+// "Hattie Caraway" first for "Carum carvi", so we prefer a result whose filename
+// actually contains a scientific token before falling back to relevance order.
+async function searchCommonsImage(query, preferTokens = []) {
   const url = commonsSearchUrl(query)
   let data
   for (let i = 0; i < 5; i++) {
@@ -126,19 +128,21 @@ async function searchCommonsImage(query) {
   const pages = Object.values(data.query.pages ?? {}).sort(
     (a, b) => (a.index ?? 0) - (b.index ?? 0),
   )
-  for (const page of pages) {
-    const info = page.imageinfo?.[0]
-    if (!info) continue
-    if (!/\.(jpe?g|png)$/i.test(page.title)) continue // skip svg/pdf/tif/gif
-    const meta = info.extmetadata ?? {}
-    return {
-      url: info.url,
-      file: page.title.replace(/^File:/, ''),
-      artist: (meta.Artist?.value ?? 'Unknown').replace(/<[^>]+>/g, '').trim(),
-      license: meta.LicenseShortName?.value ?? 'Unknown',
-    }
+  const rasters = pages.filter((p) => /\.(jpe?g|png)$/i.test(p.title) && p.imageinfo?.[0])
+  const tokens = preferTokens.map((t) => t.toLowerCase()).filter((t) => t.length > 3)
+  const preferred =
+    tokens.length &&
+    rasters.find((p) => tokens.some((t) => p.title.toLowerCase().includes(t)))
+  const page = preferred || rasters[0]
+  if (!page) return null
+  const info = page.imageinfo[0]
+  const meta = info.extmetadata ?? {}
+  return {
+    url: info.url,
+    file: page.title.replace(/^File:/, ''),
+    artist: (meta.Artist?.value ?? 'Unknown').replace(/<[^>]+>/g, '').trim(),
+    license: meta.LicenseShortName?.value ?? 'Unknown',
   }
-  return null
 }
 
 async function resolveAllInfo(items) {
@@ -162,11 +166,21 @@ async function main() {
   const attributions = await readFile(join(IMAGES_DIR, 'attributions.json'), 'utf8')
     .then(JSON.parse)
     .catch(() => ({}))
+  // Curated scientific names: for these, ignore the declared commonsFile and
+  // search the binomial instead, fixing common-name collisions (e.g. "Caraway"
+  // matching a photo of Senator Hattie Caraway).
+  const scientificNames = await readFile(join(__dirname, 'scientific-names.json'), 'utf8')
+    .then(JSON.parse)
+    .catch(() => ({}))
   const failures = []
 
-  const infoByFile = await resolveAllInfo(produce)
+  const idsArg = process.argv.indexOf('--ids')
+  const only = idsArg !== -1 ? new Set(process.argv[idsArg + 1].split(',')) : null
+  const items = only ? produce.filter((it) => only.has(it.id)) : produce
 
-  for (const item of produce) {
+  const infoByFile = await resolveAllInfo(items)
+
+  for (const item of items) {
     try {
       const { badge, hero } = outputPaths(item.id)
       // Skip work early if both outputs already exist (unless --force).
@@ -174,12 +188,15 @@ async function main() {
         console.log(`skip ${item.id}`)
         continue
       }
-      // Prefer the item's exact commonsFile; if it didn't resolve, fall back to
-      // a Commons name search so every item still gets a real image.
-      let info = FORCE_SEARCH.has(item.id) ? undefined : infoByFile.get(item.commonsFile)
+      // Prefer the item's exact commonsFile; if it didn't resolve (or a
+      // scientific-name override applies), fall back to a Commons search.
+      const sciName = scientificNames[item.id]
+      let info =
+        sciName || FORCE_SEARCH.has(item.id) ? undefined : infoByFile.get(item.commonsFile)
       let sourceFile = item.commonsFile
       if (!info) {
-        info = await searchCommonsImage(SEARCH_OVERRIDE[item.id] ?? searchQuery(item.name))
+        const term = sciName ?? SEARCH_OVERRIDE[item.id] ?? searchQuery(item.name)
+        info = await searchCommonsImage(term, sciName ? sciName.split(/\s+/) : [])
         if (info) sourceFile = info.file
         await sleep(300)
       }

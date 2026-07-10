@@ -22,7 +22,7 @@ import { commonsSearchUrl } from './fetch-images.mjs'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const IMAGES_DIR = join(__dirname, '..', 'public', 'images')
 const ATTR_FILE = join(IMAGES_DIR, 'attributions.json')
-const SPECIES_FILE = join(IMAGES_DIR, 'species.json')
+const SPECIES_FILE = join(__dirname, 'scientific-names.json')
 const UA = 'food-origins-map/1.0 (https://github.com/cnotv/food-origins-map; build script)'
 const FORCE = process.argv.includes('--force')
 
@@ -132,7 +132,9 @@ async function main() {
     // Track files already used by this item so each part gets a distinct photo
     // (search often ranks the same dominant image first for every part).
     const used = new Set()
-    const nameTokens = `${sci ?? ''} ${searchQuery(item.name)}`.toLowerCase().split(/\s+/)
+    // Prefer the scientific tokens when known so a fuzzy hit on the common name
+    // (e.g. a photo of "Hattie Caraway") isn't picked as relevant.
+    const nameTokens = (sci || searchQuery(item.name)).toLowerCase().split(/\s+/)
     for (const part of PARTS) {
       const existing = join(IMAGES_DIR, `${item.id}-${part}.webp`)
       // Skip parts already at current resolution so a re-run only upgrades the

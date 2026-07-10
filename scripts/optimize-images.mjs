@@ -18,15 +18,25 @@ const maxArg = process.argv.indexOf('--max-mb')
 const BUDGET = (maxArg !== -1 ? Number(process.argv[maxArg + 1]) : 30) * 1024 * 1024
 
 const BADGE = { w: 160, q: 70 }
+// A fixed photo spec (used for targeted --ids fixes so they match the rest of
+// the set instead of re-picking from a tiny subset's budget).
+const pwArg = process.argv.indexOf('--photo-w')
+const pqArg = process.argv.indexOf('--photo-q')
+const FIXED_SPEC =
+  pwArg !== -1 && pqArg !== -1
+    ? { w: Number(process.argv[pwArg + 1]), q: Number(process.argv[pqArg + 1]) }
+    : null
 // Tried largest-first; the first whose converted total fits the cap wins.
-const PHOTO_SPECS = [
-  { w: 440, q: 60 },
-  { w: 400, q: 58 },
-  { w: 360, q: 54 },
-  { w: 320, q: 50 },
-  { w: 288, q: 46 },
-  { w: 256, q: 42 },
-]
+const PHOTO_SPECS = FIXED_SPEC
+  ? [FIXED_SPEC]
+  : [
+      { w: 440, q: 60 },
+      { w: 400, q: 58 },
+      { w: 360, q: 54 },
+      { w: 320, q: 50 },
+      { w: 288, q: 46 },
+      { w: 256, q: 42 },
+    ]
 
 const isBadge = (f) => f.endsWith('-badge.webp')
 const sum = (bufs) => bufs.reduce((n, [, b]) => n + b.length, 0)
@@ -54,7 +64,13 @@ async function writeAll(pairs) {
 }
 
 async function main() {
-  const all = (await readdir(DIR)).filter((f) => f.endsWith('.webp'))
+  // Optional --ids a,b,c limits the re-encode to those items' images, so a
+  // targeted fix doesn't re-encode (and churn) the whole set.
+  const idsArg = process.argv.indexOf('--ids')
+  const only = idsArg !== -1 ? process.argv[idsArg + 1].split(',') : null
+  const matches = (f) => !only || only.some((id) => f.startsWith(`${id}-`))
+
+  const all = (await readdir(DIR)).filter((f) => f.endsWith('.webp') && matches(f))
   const badges = all.filter(isBadge)
   const photos = all.filter((f) => !isBadge(f)) // heroes + parts
 
