@@ -26,7 +26,7 @@ const SPECIES_FILE = join(__dirname, 'scientific-names.json')
 const UA = 'food-origins-map/1.0 (https://github.com/cnotv/food-origins-map; build script)'
 const FORCE = process.argv.includes('--force')
 
-const PARTS = ['fruit', 'leaves', 'seed', 'tree']
+const PARTS = ['fruit', 'leaves', 'seed', 'flower']
 const exists = (p) => access(p).then(() => true, () => false)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const searchQuery = (name) => name.replace(/\([^)]*\)/g, '').replace(/['"’]/g, '').trim()
@@ -40,7 +40,7 @@ const PART_QUERY = {
   fruit: (n) => `${n} fruit`,
   leaves: (n) => `${n} leaves -butterfly -moth`,
   seed: (n) => `${n} seeds`,
-  tree: (n) => `${n} plant -butterfly -moth`,
+  flower: (n) => `${n} flower -butterfly -moth`,
 }
 
 // A candidate is more trustworthy if its filename mentions the plant, so prefer
@@ -164,8 +164,8 @@ async function main() {
         // so an in-place --force run never leaves a missing or partial file.
         const tmp = `${existing}.tmp`
         await sharp(buf, { limitInputPixels: false })
-          .resize(520, 520, { fit: 'inside' })
-          .webp({ quality: 66 })
+          .resize(1000, 1000, { fit: 'inside' })
+          .webp({ quality: 84 })
           .toFile(tmp)
         await rename(tmp, existing)
         attributions[`${item.id}__${part}`] = {

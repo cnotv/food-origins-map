@@ -7,13 +7,12 @@ import attributions from '../../public/images/attributions.json'
 const props = defineProps<{ item: ProduceItem }>()
 
 type Cand = { key: string; label: string; src: string; attrKey: string }
-type Status = 'loading' | 'ok' | 'fail'
 
 const PARTS: { key: ImagePart; label: string }[] = [
   { key: 'fruit', label: 'Fruit' },
-  { key: 'leaves', label: 'Leaves' },
+  { key: 'leaves', label: 'Leaf' },
   { key: 'seed', label: 'Seed' },
-  { key: 'tree', label: 'Tree/Plant' },
+  { key: 'flower', label: 'Flower' },
 ]
 
 // Candidate images: the main photo plus each botanical part. Any that 404 are
@@ -28,28 +27,31 @@ const candidates = computed<Cand[]>(() => [
   })),
 ])
 
-const status = reactive<Record<string, Status>>({})
+const attrs = attributions as Record<string, { artist: string; license: string }>
 const slide = ref<number | null>(null) // index into `loaded`, or null for the grid
 
-// Reset load tracking whenever the item changes.
+// Images that unexpectedly fail to load (rare — the manifest should be accurate)
+// are hidden. Reset when the item changes.
+const failed = reactive(new Set<string>())
 watch(
   () => props.item.id,
   () => {
-    for (const k of Object.keys(status)) delete status[k]
+    failed.clear()
     slide.value = null
   },
   { immediate: true },
 )
 
-const loaded = computed(() => candidates.value.filter((c) => status[c.key] === 'ok'))
-const attrOf = (key: string) =>
-  (attributions as Record<string, { artist: string; license: string }>)[key]
+// Which images exist is known up front from the attributions manifest, so the
+// grid renders in its final shape immediately — no per-image probing or
+// pop-in flicker.
+const loaded = computed(() =>
+  candidates.value.filter((c) => attrs[c.attrKey] !== undefined && !failed.has(c.key)),
+)
+const attrOf = (key: string) => attrs[key]
 
-function onLoad(key: string) {
-  status[key] = 'ok'
-}
 function onError(key: string) {
-  status[key] = 'fail'
+  failed.add(key)
 }
 function openSlide(cand: Cand) {
   slide.value = loaded.value.findIndex((c) => c.key === cand.key)
@@ -62,19 +64,8 @@ function step(delta: number) {
 </script>
 <template>
   <div class="gallery-wrap">
-    <!-- Hidden loaders: every candidate is fetched so we can detect which exist. -->
-    <img
-      v-for="c in candidates"
-      :key="'probe-' + c.key"
-      :src="c.src"
-      class="probe"
-      alt=""
-      @load="onLoad(c.key)"
-      @error="onError(c.key)"
-    />
-
-    <!-- Grid of the images that loaded. Odd counts let the first span full width
-         so no empty cell is ever left. -->
+    <!-- Grid of the images known to exist (from the manifest). Odd counts let the
+         first span full width so no empty cell is ever left. -->
     <div
       class="gallery"
       :class="['count-' + loaded.length, { odd: loaded.length % 2 === 1 }]"
@@ -86,7 +77,7 @@ function step(delta: number) {
         type="button"
         @click="openSlide(c)"
       >
-        <img :src="c.src" :alt="`${item.name} — ${c.label}`" />
+        <img :src="c.src" :alt="`${item.name} — ${c.label}`" @error="onError(c.key)" />
         <span class="cell-label">{{ c.label }}</span>
       </button>
     </div>
@@ -125,7 +116,6 @@ function step(delta: number) {
 </template>
 <style scoped>
 .gallery-wrap { position: relative; }
-.probe { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
 .gallery.count-0 { display: none; }

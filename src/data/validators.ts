@@ -3,7 +3,7 @@ import { CATEGORIES } from './types'
 
 export const badgeImagePath = (id: string) => `/images/${id}-badge.webp`
 export const heroImagePath = (id: string) => `/images/${id}-hero.webp`
-export type ImagePart = 'fruit' | 'leaves' | 'seed' | 'tree'
+export type ImagePart = 'fruit' | 'leaves' | 'seed' | 'flower'
 export const partImagePath = (id: string, part: ImagePart) => `/images/${id}-${part}.webp`
 
 export function validateDataset(items: ProduceItem[]): string[] {

@@ -212,7 +212,7 @@ async function main() {
       // partial or empty file if encoding/writing is interrupted.
       await src().resize(200, 200, { fit: 'cover', position: 'centre' }).webp({ quality: 84 }).toFile(`${badge}.tmp`)
       await rename(`${badge}.tmp`, badge)
-      await src().resize(640, null, { fit: 'inside' }).webp({ quality: 80 }).toFile(`${hero}.tmp`)
+      await src().resize(1000, null, { fit: 'inside' }).webp({ quality: 84 }).toFile(`${hero}.tmp`)
       await rename(`${hero}.tmp`, hero)
       console.log(`done ${item.id}`)
       await sleep(600)

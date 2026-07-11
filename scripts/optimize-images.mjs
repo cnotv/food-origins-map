@@ -101,7 +101,8 @@ async function main() {
     `\nDone. ${all.length} images, ${(finalBytes / 1048576).toFixed(2)} MB ` +
       `(cap ${(BUDGET / 1048576).toFixed(0)} MB). Photos at ${chosen.w}px q${chosen.q}.`,
   )
-  if (finalBytes > BUDGET) process.exitCode = 1
+  // A fixed spec (--photo-w/--photo-q) intentionally ignores the budget.
+  if (!FIXED_SPEC && finalBytes > BUDGET) process.exitCode = 1
 }
 
 main()
