@@ -40,7 +40,7 @@ describe('ForageView', () => {
     delete (navigator as unknown as { geolocation?: unknown }).geolocation
   })
 
-  it('adds a point via "Use my location" and emits focus + markers for it', async () => {
+  it('adds a point via "Use my location", showing nothing on the map until a food is picked', async () => {
     const getCurrentPosition = vi.fn(
       (success: (pos: { coords: { latitude: number; longitude: number } }) => void) => {
         success({ coords: { latitude: 40, longitude: -70 } })
@@ -56,9 +56,15 @@ describe('ForageView', () => {
     expect(wrapper.findAll('.point')).toHaveLength(1)
     const points = listSavedPoints()
     expect(points).toHaveLength(1)
-    expect(points[0]).toMatchObject({ lat: 40, lng: -70 })
+    expect(points[0]).toMatchObject({ lat: 40, lng: -70, visibleFoodIds: [] })
 
     expect(wrapper.emitted('focus')?.at(-1)).toEqual([{ lat: 40, lng: -70 }])
+    // Nothing is shown on the map for a fresh point — the visitor picks per food.
+    expect(wrapper.emitted('markers')?.at(-1)).toEqual([[]])
+    expect((wrapper.find('.toggle input').element as HTMLInputElement).checked).toBe(false)
+
+    await wrapper.find('.toggle input').setValue(true)
+    await flushPromises()
     expect(wrapper.emitted('markers')?.at(-1)).toEqual([
       [{ id: `${points[0].id}:test-fruit`, lat: 40, lng: -70, item: testItem }],
     ])
@@ -86,22 +92,32 @@ describe('ForageView', () => {
     expect((wrapper.find('.loc-input').element as HTMLInputElement).value).toBe('')
   })
 
-  it('toggles a food off the map without removing it from the list', async () => {
+  it('toggles a food on the map, and back off, without removing it from the list', async () => {
     addSavedPoint('Test point', 5, 5)
     const wrapper = mountView()
     await flushPromises()
 
     expect(wrapper.findAll('.result')).toHaveLength(1)
     const checkbox = wrapper.find('.toggle input')
-    expect((checkbox.element as HTMLInputElement).checked).toBe(true)
+    // Nothing shown by default — picking a food is opt-in.
+    expect((checkbox.element as HTMLInputElement).checked).toBe(false)
 
-    await checkbox.setValue(false)
+    await checkbox.setValue(true)
+    await flushPromises()
+
+    expect(wrapper.findAll('.result')).toHaveLength(1)
+    expect((wrapper.find('.toggle input').element as HTMLInputElement).checked).toBe(true)
+    expect(listSavedPoints()[0].visibleFoodIds).toEqual(['test-fruit'])
+    expect(wrapper.emitted('markers')?.at(-1)).toEqual([
+      [{ id: `${listSavedPoints()[0].id}:test-fruit`, lat: 5, lng: 5, item: testItem }],
+    ])
+
+    await wrapper.find('.toggle input').setValue(false)
     await flushPromises()
 
     // Still in the list — only hidden from the map.
     expect(wrapper.findAll('.result')).toHaveLength(1)
-    expect((wrapper.find('.toggle input').element as HTMLInputElement).checked).toBe(false)
-    expect(listSavedPoints()[0].hiddenFoodIds).toEqual(['test-fruit'])
+    expect(listSavedPoints()[0].visibleFoodIds).toEqual([])
     expect(wrapper.emitted('markers')?.at(-1)).toEqual([[]])
   })
 

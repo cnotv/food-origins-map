@@ -10,12 +10,12 @@ describe('savedPoints (localStorage)', () => {
     expect(listSavedPoints()).toEqual([])
   })
 
-  it('adds a point with no hidden foods by default', () => {
+  it('adds a point with no foods shown on the map by default', () => {
     const point = addSavedPoint('My yard', 40, -70)
     expect(point.label).toBe('My yard')
     expect(point.lat).toBe(40)
     expect(point.lng).toBe(-70)
-    expect(point.hiddenFoodIds).toEqual([])
+    expect(point.visibleFoodIds).toEqual([])
     expect(point.id).toBeTruthy()
 
     expect(listSavedPoints()).toEqual([point])
@@ -41,16 +41,16 @@ describe('savedPoints (localStorage)', () => {
     expect(listSavedPoints()).toEqual([keep])
   })
 
-  it('toggles a food id in and out of hiddenFoodIds', () => {
+  it('toggles a food id in and out of visibleFoodIds', () => {
     const point = addSavedPoint('Spot', 1, 1)
     toggleFoodVisibility(point.id, 'apple')
-    expect(listSavedPoints()[0].hiddenFoodIds).toEqual(['apple'])
+    expect(listSavedPoints()[0].visibleFoodIds).toEqual(['apple'])
 
     toggleFoodVisibility(point.id, 'pear')
-    expect(listSavedPoints()[0].hiddenFoodIds).toEqual(['apple', 'pear'])
+    expect(listSavedPoints()[0].visibleFoodIds).toEqual(['apple', 'pear'])
 
     toggleFoodVisibility(point.id, 'apple')
-    expect(listSavedPoints()[0].hiddenFoodIds).toEqual(['pear'])
+    expect(listSavedPoints()[0].visibleFoodIds).toEqual(['pear'])
   })
 
   it('leaves other points untouched when toggling one', () => {
@@ -58,8 +58,8 @@ describe('savedPoints (localStorage)', () => {
     const b = addSavedPoint('B', 2, 2)
     toggleFoodVisibility(a.id, 'apple')
     const points = listSavedPoints()
-    expect(points.find((p) => p.id === a.id)?.hiddenFoodIds).toEqual(['apple'])
-    expect(points.find((p) => p.id === b.id)?.hiddenFoodIds).toEqual([])
+    expect(points.find((p) => p.id === a.id)?.visibleFoodIds).toEqual(['apple'])
+    expect(points.find((p) => p.id === b.id)?.visibleFoodIds).toEqual([])
   })
 
   it('ignores malformed data already in storage', () => {
@@ -74,7 +74,7 @@ describe('savedPoints (localStorage)', () => {
     localStorage.setItem(
       'food-origins-map:saved-points',
       JSON.stringify([
-        { id: '1', label: 'ok', lat: 1, lng: 1, createdAt: 1, hiddenFoodIds: [] },
+        { id: '1', label: 'ok', lat: 1, lng: 1, createdAt: 1, visibleFoodIds: [] },
         { id: '2' },
         null,
         'x',

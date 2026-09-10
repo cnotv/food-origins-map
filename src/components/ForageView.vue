@@ -91,13 +91,13 @@ const filteredFor = (point: SavedPoint) => {
   return category.value === 'all' ? results : results.filter((it) => it.category === category.value)
 }
 
-// What actually renders on the map: every point's filtered results that
-// haven't been toggled off, positioned at that point rather than the food's
-// own domestication origin.
+// What actually renders on the map: only the foods explicitly picked on at
+// each point (of its filtered results), positioned at that point rather than
+// the food's own domestication origin.
 const mapMarkers = computed<MarkerEntry[]>(() =>
   points.value.flatMap((point) =>
     filteredFor(point)
-      .filter((item) => !point.hiddenFoodIds.includes(item.id))
+      .filter((item) => point.visibleFoodIds.includes(item.id))
       .map((item) => ({ id: `${point.id}:${item.id}`, lat: point.lat, lng: point.lng, item })),
   ),
 )
@@ -225,6 +225,9 @@ const onThumbError = (e: Event) => {
               {{ SEASON_LABEL[seasonFor(point)] }}, {{ hemisphere(point.lat) }} Hemisphere ·
               {{ REALM_LABEL[realmFor(point)] }}
             </span>
+            <span v-if="point.visibleFoodIds.length === 0" class="point-hint">
+              Check a food below to show it on the map.
+            </span>
           </div>
           <button class="remove-point" aria-label="Remove saved point" @click="removePoint(point.id)">
             ✕
@@ -242,11 +245,11 @@ const onThumbError = (e: Event) => {
           >
             <label
               class="toggle"
-              :title="point.hiddenFoodIds.includes(item.id) ? 'Show on map' : 'Hide from map'"
+              :title="point.visibleFoodIds.includes(item.id) ? 'Hide from map' : 'Show on map'"
             >
               <input
                 type="checkbox"
-                :checked="!point.hiddenFoodIds.includes(item.id)"
+                :checked="point.visibleFoodIds.includes(item.id)"
                 @change="toggleFood(point.id, item.id)"
               />
             </label>
@@ -325,6 +328,7 @@ const onThumbError = (e: Event) => {
   font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .point-meta { font-size: 11px; color: var(--text-faint); }
+.point-hint { font-size: 11px; color: var(--text-faint); font-style: italic; }
 .remove-point {
   flex: none; border: none; background: none; color: var(--text-faint);
   width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px;

@@ -238,8 +238,10 @@ earlier versions: a point is added by searching a city, using "Use my location",
 arming "Add a point by tapping the map" and clicking `WorldMap` (relayed up through
 `App.vue` as a `mapClick` signal, back down to `ForageView` as a prop — see
 `composables/savedPoints.ts` for the `localStorage` CRUD). Each point gets its own
-foragable-now results (`data/season.ts`'s `foragableNow`), filterable by category, with a
-checkbox per food to hide just that food's marker without removing the point.
+foragable-now results (`data/season.ts`'s `foragableNow`), filterable by category. A point
+starts with **nothing shown on the map** — a spot can be foragable for dozens of things at
+once, so each food's marker is opt-in via a checkbox per result (`visibleFoodIds` on the
+point) rather than dumping every in-season result on by default.
 
 While Forage is open, `WorldMap` swaps its normal per-food origin markers for these
 per-point results instead (`origin-markers-visible="false"` + a `forage-markers` prop of

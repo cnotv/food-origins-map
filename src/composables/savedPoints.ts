@@ -8,8 +8,11 @@ export interface SavedPoint {
   lat: number
   lng: number
   createdAt: number
-  // Food ids explicitly hidden from the map for this point; absent = shown.
-  hiddenFoodIds: string[]
+  // Food ids explicitly picked to show on the map for this point. A point
+  // starts with none: a saved spot can be foragable for dozens of things at
+  // once, so the map only fills in as the visitor picks which ones matter to
+  // them there, rather than dumping every in-season result on by default.
+  visibleFoodIds: string[]
 }
 
 const STORAGE_KEY = 'food-origins-map:saved-points'
@@ -23,8 +26,8 @@ function isSavedPoint(value: unknown): value is SavedPoint {
     typeof p.lat === 'number' &&
     typeof p.lng === 'number' &&
     typeof p.createdAt === 'number' &&
-    Array.isArray(p.hiddenFoodIds) &&
-    p.hiddenFoodIds.every((id) => typeof id === 'string')
+    Array.isArray(p.visibleFoodIds) &&
+    p.visibleFoodIds.every((id) => typeof id === 'string')
   )
 }
 
@@ -59,7 +62,7 @@ export function addSavedPoint(label: string, lat: number, lng: number): SavedPoi
     lat,
     lng,
     createdAt: Date.now(),
-    hiddenFoodIds: [],
+    visibleFoodIds: [],
   }
   writeAll([...readAll(), point])
   return point
@@ -73,10 +76,10 @@ export function toggleFoodVisibility(pointId: string, foodId: string): void {
   writeAll(
     readAll().map((p) => {
       if (p.id !== pointId) return p
-      const hiddenFoodIds = p.hiddenFoodIds.includes(foodId)
-        ? p.hiddenFoodIds.filter((id) => id !== foodId)
-        : [...p.hiddenFoodIds, foodId]
-      return { ...p, hiddenFoodIds }
+      const visibleFoodIds = p.visibleFoodIds.includes(foodId)
+        ? p.visibleFoodIds.filter((id) => id !== foodId)
+        : [...p.visibleFoodIds, foodId]
+      return { ...p, visibleFoodIds }
     }),
   )
 }
