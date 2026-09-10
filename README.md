@@ -52,6 +52,15 @@ Produce entries are split across two files, both typed by `ProduceItem` in
 - [`src/data/produce-extra.ts`](src/data/produce-extra.ts) — the 500+ item bulk
   expansion in a compact tuple form expanded by a `toItem()` mapper.
 
+Recipes live alongside the dataset:
+
+- [`src/data/recipes.ts`](src/data/recipes.ts) — English descriptions of the
+  classic dishes each food appears in at home, researched per country of origin.
+- [`src/data/recipe-sites.ts`](src/data/recipe-sites.ts) — maps a region of
+  origin to that cuisine's leading recipe site (Giallo Zafferano, Just One
+  Cookbook, The Woks of Life, …) and builds the per-item "Cook it" search links
+  shown in the side panel.
+
 The dataset is guarded by [`src/data/validators.ts`](src/data/validators.ts) and
 a test (`src/data/__tests__/produce.test.ts`) that enforces unique ids, in-range
 coordinates, non-empty fields, a `https://www.tasteatlas.com/` recipe URL, and a

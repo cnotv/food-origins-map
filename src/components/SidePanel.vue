@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { ProduceItem } from '../data/types'
 import { getFieldGuide } from '../data/guide'
+import { recipeLinks } from '../data/recipe-sites'
 import NutritionTable from './NutritionTable.vue'
 import MiniMap from './MiniMap.vue'
 import ImageGallery from './ImageGallery.vue'
@@ -33,6 +34,7 @@ const RAW_LABEL = {
 } as const
 
 const guide = computed(() => (props.item ? getFieldGuide(props.item.id) : undefined))
+const cookLinks = computed(() => (props.item ? recipeLinks(props.item) : []))
 const attribution = computed(() =>
   props.item
     ? (attributions as Record<string, { artist: string; license: string }>)[props.item.id]
@@ -109,6 +111,12 @@ const attribution = computed(() =>
           <li v-for="r in guide.recipes" :key="r">{{ r }}</li>
         </ul>
         <p v-else class="muted">Recipes not yet documented for this item.</p>
+        <h3 class="cook-title">Cook it</h3>
+        <ul class="list cook-links">
+          <li v-for="l in cookLinks" :key="l.url">
+            <a :href="l.url" target="_blank" rel="noopener">{{ l.label }} ↗</a>
+          </li>
+        </ul>
       </section>
 
       <!-- Varieties -->
@@ -167,6 +175,9 @@ h2 { margin: 8px 0 2px; }
   padding: 8px 10px; color: var(--forage-text); font-size: 12.5px;
 }
 .list { margin: 0; padding-left: 18px; line-height: 1.6; }
+.cook-title { margin: 16px 0 6px; font-size: 15px; }
+.cook-links a { color: var(--brand); text-decoration: none; font-size: 14px; }
+.cook-links a:hover { text-decoration: underline; }
 .muted { color: var(--text-faint); font-style: italic; }
 .recipes-link {
   display: inline-block; margin-top: 12px; background: var(--brand); color: #fff;

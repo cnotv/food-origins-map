@@ -78,6 +78,12 @@ Layered on top, `guide.ts` and `season.ts` add per-item knowledge:
   and/or foraged, whether it is safe to eat raw, side effects, and — where it can
   be foraged — habitat and identification notes, plus recipes, well-known
   varieties, and local/native names.
+- **Recipes** (`recipes.ts` + `recipe-sites.ts`): English descriptions of the
+  classic dishes each food appears in at home, researched from that cuisine's
+  own recipe canon, so every item on the map has recipes; `recipe-sites.ts` maps
+  a region of origin to that cuisine's leading recipe site and builds a search
+  link for the item on it. Preparations follow the field guide's safety notes —
+  foods that are toxic raw are only listed cooked or processed.
 - **Seasons & regions** (`season.ts`): the free-text harvest season is parsed
   into a set of seasons; a location's latitude gives its hemisphere (and thus the
   current season), and a coordinate is classified into a **biogeographic realm**
