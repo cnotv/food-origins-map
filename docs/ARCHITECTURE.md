@@ -72,11 +72,13 @@ src/
 │   ├── SidePanel.vue           # Slide-in detail panel for the selected food
 │   ├── NutritionTable.vue      # Per-100g nutrition + highlights
 │   ├── FilterChips.vue         # Category filter buttons
-│   └── MapsView.vue            # Saved-maps panel (save/load/delete a view)
+│   ├── MapsView.vue            # Saved-maps panel (save/load/delete a view)
+│   └── ForageView.vue          # Forage panel: save points, per-point results, map toggles
 ├── composables/
 │   ├── savedMaps.ts            # localStorage-backed saved-map CRUD
 │   ├── cloudMaps.ts            # Firestore-backed saved-map CRUD (signed-in users)
-│   └── useGoogleAuth.ts        # Firebase Google sign-in state
+│   ├── useGoogleAuth.ts        # Firebase Google sign-in state
+│   └── savedPoints.ts          # localStorage-backed saved-point CRUD (Forage)
 ├── lib/
 │   └── firebase.ts             # Lazy/optional Firebase app+auth+firestore init
 └── data/
@@ -228,6 +230,22 @@ vars and only `import()`s the Firebase SDK once a `VITE_FIREBASE_*` config is
 present and the Maps panel or sign-in is actually used — an unconfigured
 deployment ships none of that code and just shows localStorage-only saves.
 See [SAVED_MAPS.md](./SAVED_MAPS.md) for setup.
+
+### ForageView.vue — saved points
+
+Foraging is built around **saved points**, not the single current-location search of
+earlier versions: a point is added by searching a city, using "Use my location", or
+arming "Add a point by tapping the map" and clicking `WorldMap` (relayed up through
+`App.vue` as a `mapClick` signal, back down to `ForageView` as a prop — see
+`composables/savedPoints.ts` for the `localStorage` CRUD). Each point gets its own
+foragable-now results (`data/season.ts`'s `foragableNow`), filterable by category, with a
+checkbox per food to hide just that food's marker without removing the point.
+
+While Forage is open, `WorldMap` swaps its normal per-food origin markers for these
+per-point results instead (`origin-markers-visible="false"` + a `forage-markers` prop of
+`MarkerEntry[]`, exported from `WorldMap.vue`): a food now renders at the saved point's
+coordinates rather than its domestication origin, since that's what's actually relevant to
+foraging there. Closing Forage restores the origin markers.
 
 ---
 

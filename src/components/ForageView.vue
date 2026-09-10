@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import type { ProduceItem, Category } from '../data/types'
 import { badgeImagePath } from '../data/validators'
-import { categoryColor } from './WorldMap.vue'
+import { categoryColor, type MarkerEntry } from './WorldMap.vue'
 import FilterChips from './FilterChips.vue'
 import {
   foragableNow,
@@ -12,12 +12,27 @@ import {
   REALM_LABEL,
   type Season,
 } from '../data/season'
+import {
+  addSavedPoint,
+  listSavedPoints,
+  removeSavedPoint,
+  toggleFoodVisibility,
+  type SavedPoint,
+} from '../composables/savedPoints'
 
-const props = defineProps<{ items: ProduceItem[]; selectedId: string | null }>()
+const props = defineProps<{
+  items: ProduceItem[]
+  selectedId: string | null
+  // A click relayed from WorldMap; only acted on while pickMode is armed. A
+  // fresh object on every click (App.vue) is what makes the watcher below
+  // fire even for two clicks at the same spot.
+  mapClick: { lat: number; lng: number; nonce: number } | null
+}>()
 const emit = defineEmits<{
   select: [item: ProduceItem]
   close: []
   focus: [point: { lat: number; lng: number }]
+  markers: [entries: MarkerEntry[]]
 }>()
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -37,27 +52,56 @@ const query = ref('')
 const category = ref<Category | 'all'>('all')
 const loading = ref(false)
 const error = ref('')
-// The resolved place, or null until the user picks a location.
-const place = ref<{ name: string; lat: number; lng: number } | null>(null)
-// Center and zoom the map to it as soon as it resolves, whether from the city
-// search or "Use my location".
-watch(place, (p) => {
-  if (p) emit('focus', { lat: p.lat, lng: p.lng })
-})
+// Arms map-click picking: the next click relayed from WorldMap adds a point.
+const pickMode = ref(false)
 
-const season = computed(() => (place.value ? currentSeasonForLat(place.value.lat) : null))
-const realm = computed(() =>
-  place.value ? classifyRealm(place.value.lat, place.value.lng) : null,
+const points = ref<SavedPoint[]>(listSavedPoints())
+
+function addPoint(label: string, lat: number, lng: number) {
+  addSavedPoint(label, lat, lng)
+  points.value = listSavedPoints()
+  emit('focus', { lat, lng })
+}
+
+watch(
+  () => props.mapClick,
+  (click) => {
+    if (!click || !pickMode.value) return
+    pickMode.value = false
+    addPoint(`Tapped point (${click.lat.toFixed(2)}, ${click.lng.toFixed(2)})`, click.lat, click.lng)
+  },
 )
-const results = computed(() =>
-  place.value ? foragableNow(props.items, place.value.lat, place.value.lng) : [],
-)
+
+function removePoint(id: string) {
+  removeSavedPoint(id)
+  points.value = points.value.filter((p) => p.id !== id)
+}
+
+function toggleFood(pointId: string, foodId: string) {
+  toggleFoodVisibility(pointId, foodId)
+  points.value = listSavedPoints()
+}
+
+const seasonFor = (point: SavedPoint) => currentSeasonForLat(point.lat)
+const realmFor = (point: SavedPoint) => classifyRealm(point.lat, point.lng)
+const resultsFor = (point: SavedPoint) => foragableNow(props.items, point.lat, point.lng)
 // Narrow the in-season results by category (fruit, vegetable, …).
-const filtered = computed(() =>
-  category.value === 'all'
-    ? results.value
-    : results.value.filter((it) => it.category === category.value),
+const filteredFor = (point: SavedPoint) => {
+  const results = resultsFor(point)
+  return category.value === 'all' ? results : results.filter((it) => it.category === category.value)
+}
+
+// What actually renders on the map: every point's filtered results that
+// haven't been toggled off, positioned at that point rather than the food's
+// own domestication origin.
+const mapMarkers = computed<MarkerEntry[]>(() =>
+  points.value.flatMap((point) =>
+    filteredFor(point)
+      .filter((item) => !point.hiddenFoodIds.includes(item.id))
+      .map((item) => ({ id: `${point.id}:${item.id}`, lat: point.lat, lng: point.lng, item })),
+  ),
 )
+watch(mapMarkers, (m) => emit('markers', m), { immediate: true })
 
 // Fetch JSON with a hard timeout so a stalled or blocked request surfaces an
 // error instead of leaving the UI stuck on "Locating…".
@@ -85,14 +129,10 @@ async function geocodeCity() {
     const hit = data.results?.[0]
     if (!hit) {
       error.value = `Couldn't find "${q}".`
-      place.value = null
       return
     }
-    place.value = {
-      name: [hit.name, hit.country].filter(Boolean).join(', '),
-      lat: hit.latitude,
-      lng: hit.longitude,
-    }
+    addPoint([hit.name, hit.country].filter(Boolean).join(', '), hit.latitude, hit.longitude)
+    query.value = ''
   } catch {
     error.value = 'Location lookup failed — check your connection (or an ad/privacy blocker) and try again.'
   } finally {
@@ -120,7 +160,7 @@ function useMyLocation() {
       } catch {
         // keep the coordinate label
       }
-      place.value = { name, lat: latitude, lng: longitude }
+      addPoint(name, latitude, longitude)
       loading.value = false
     },
     (err) => {
@@ -149,7 +189,7 @@ const onThumbError = (e: Event) => {
         <h2>Forage now</h2>
         <button class="close" aria-label="Close" @click="emit('close')">✕</button>
       </div>
-      <p class="lede">Find wild foods in season near a place, right now.</p>
+      <p class="lede">Save spots you can forage, and see what's in season there right now.</p>
       <form class="loc-form" @submit.prevent="geocodeCity">
         <input
           v-model="query"
@@ -157,56 +197,86 @@ const onThumbError = (e: Event) => {
           type="text"
           placeholder="Enter a city…"
           aria-label="City name"
+          :disabled="loading"
         />
         <button type="submit" class="go" :disabled="loading">Go</button>
       </form>
-      <button class="use-loc" :disabled="loading" @click="useMyLocation">
-        Use my location
+      <button class="use-loc" :disabled="loading" @click="useMyLocation">Use my location</button>
+      <button
+        class="pick-toggle"
+        :class="{ active: pickMode }"
+        :aria-pressed="pickMode"
+        @click="pickMode = !pickMode"
+      >
+        {{ pickMode ? 'Tap the map to place your point…' : 'Add a point by tapping the map' }}
       </button>
 
       <p v-if="loading" class="status">Locating…</p>
       <p v-else-if="error" class="status err">{{ error }}</p>
-      <p v-else-if="place && season && realm" class="status ok">
-        <strong>{{ place.name }}</strong> — {{ SEASON_LABEL[season] }},
-        {{ hemisphere(place.lat) }} Hemisphere.
-        <span class="region-note">Region: {{ REALM_LABEL[realm] }}.</span>
-        <span class="count">{{ filtered.length }} wild {{ filtered.length === 1 ? 'food' : 'foods' }} in season</span>
-      </p>
-      <FilterChips v-if="place" :active="category" @change="category = $event" />
+      <FilterChips v-if="points.length" :active="category" @change="category = $event" />
     </header>
 
-    <ul v-if="place" class="results">
-      <li v-if="filtered.length === 0" class="empty">
-        No documented wild foods are in season here for this filter right now.
-      </li>
-      <li
-        v-for="item in filtered"
-        :key="item.id"
-        class="result"
-        :class="{ active: item.id === selectedId }"
-        @click="emit('select', item)"
-      >
-        <span class="thumb" :style="{ borderColor: categoryColor(item.category) }">
-          <img :src="badgeImagePath(item.id)" :alt="item.name" @error="onThumbError" />
-          <span
-            class="thumb-fallback"
-            :style="{ background: categoryColor(item.category), display: 'none' }"
+    <div v-if="points.length" class="points">
+      <div v-for="point in points" :key="point.id" class="point">
+        <div class="point-head">
+          <div class="point-title">
+            <strong>{{ point.label }}</strong>
+            <span class="point-meta">
+              {{ SEASON_LABEL[seasonFor(point)] }}, {{ hemisphere(point.lat) }} Hemisphere ·
+              {{ REALM_LABEL[realmFor(point)] }}
+            </span>
+          </div>
+          <button class="remove-point" aria-label="Remove saved point" @click="removePoint(point.id)">
+            ✕
+          </button>
+        </div>
+        <ul class="results">
+          <li v-if="filteredFor(point).length === 0" class="empty">
+            Nothing in season here{{ category !== 'all' ? ' for this filter' : '' }} right now.
+          </li>
+          <li
+            v-for="item in filteredFor(point)"
+            :key="item.id"
+            class="result"
+            :class="{ active: item.id === selectedId }"
           >
-            {{ item.name.charAt(0).toUpperCase() }}
-          </span>
-        </span>
-        <span class="meta">
-          <span class="name">{{ item.name }}</span>
-          <span class="region">{{ item.origin.region }}</span>
-        </span>
-        <span class="cat" :style="{ color: categoryColor(item.category) }">
-          {{ CATEGORY_LABEL[item.category] }}
-        </span>
-      </li>
-    </ul>
+            <label
+              class="toggle"
+              :title="point.hiddenFoodIds.includes(item.id) ? 'Show on map' : 'Hide from map'"
+            >
+              <input
+                type="checkbox"
+                :checked="!point.hiddenFoodIds.includes(item.id)"
+                @change="toggleFood(point.id, item.id)"
+              />
+            </label>
+            <span class="result-body" @click="emit('select', item)">
+              <span class="thumb" :style="{ borderColor: categoryColor(item.category) }">
+                <img :src="badgeImagePath(item.id)" :alt="item.name" @error="onThumbError" />
+                <span
+                  class="thumb-fallback"
+                  :style="{ background: categoryColor(item.category), display: 'none' }"
+                >
+                  {{ item.name.charAt(0).toUpperCase() }}
+                </span>
+              </span>
+              <span class="meta">
+                <span class="name">{{ item.name }}</span>
+                <span class="region">{{ item.origin.region }}</span>
+              </span>
+              <span class="cat" :style="{ color: categoryColor(item.category) }">
+                {{ CATEGORY_LABEL[item.category] }}
+              </span>
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
     <p v-else class="hint">
-      Foods are matched to your region (by biogeographic realm) and the current season — a starting
-      point for what to look for, not a guarantee it grows at your exact spot.
+      Save a spot — search a city, use your location, or tap the map — to see wild foods in
+      season there. Foods are matched to your region (by biogeographic realm) and the current
+      season — a starting point for what to look for, not a guarantee it grows at your exact
+      spot.
     </p>
   </aside>
 </template>
@@ -231,28 +301,47 @@ const onThumbError = (e: Event) => {
   border: 1px solid var(--border-strong); border-radius: 8px;
   background: var(--surface); color: var(--text);
 }
-.go, .use-loc {
+.go, .use-loc, .pick-toggle {
   border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
   border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer;
 }
 .go { flex: none; }
-.use-loc { margin-top: 8px; width: 100%; }
+.use-loc, .pick-toggle { margin-top: 8px; width: 100%; }
+.pick-toggle.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .go:disabled, .use-loc:disabled { opacity: 0.5; cursor: default; }
 .forage-head :deep(.chips-row) { margin-top: 10px; }
 .status { margin: 10px 0 2px; font-size: 13px; line-height: 1.4; }
 .status.err { color: var(--warn-text); }
-.status.ok { color: var(--text); }
-.region-note { display: block; margin-top: 2px; color: var(--text-muted); }
-.count { display: block; margin-top: 2px; color: var(--text-faint); }
 .hint { padding: 16px; color: var(--text-faint); font-size: 13px; line-height: 1.5; }
-.results { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; flex: 1; }
-.empty { padding: 24px 16px; color: var(--text-faint); text-align: center; }
+
+.points { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+.point { border-bottom: 1px solid var(--border); }
+.point-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  padding: 10px 16px; background: var(--surface-2);
+}
+.point-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.point-title strong {
+  font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.point-meta { font-size: 11px; color: var(--text-faint); }
+.remove-point {
+  flex: none; border: none; background: none; color: var(--text-faint);
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px;
+}
+.remove-point:hover { color: var(--warn-text); }
+
+.results { list-style: none; margin: 0; padding: 4px 0; }
+.empty { padding: 16px; color: var(--text-faint); text-align: center; font-size: 13px; }
 .result {
-  display: flex; align-items: center; gap: 12px; padding: 8px 16px;
-  cursor: pointer; border-left: 3px solid transparent;
+  display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 12px;
+  border-left: 3px solid transparent;
 }
 .result:hover { background: var(--surface-hover); }
 .result.active { background: var(--surface-2); border-left-color: var(--accent); }
+.toggle { flex: none; display: flex; align-items: center; }
+.toggle input { cursor: pointer; width: 16px; height: 16px; }
+.result-body { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
 .thumb {
   flex: none; width: 36px; height: 36px; border-radius: 50%; border: 2px solid;
   overflow: hidden; background: var(--surface);

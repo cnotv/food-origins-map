@@ -12,6 +12,18 @@ export const categoryColor = (c: Category) => COLORS[c]
 
 const MARKER_SIZE = 80
 
+// One marker to place: `id` is the DOM/cluster key (must be unique across the
+// active set — see spreadPositions), `lat`/`lng` is where it goes, and `item`
+// supplies the badge image/color. In origin mode this is each item's own
+// domestication point; in forage mode it's a saved point's coordinates, so
+// the same food can appear at more than one place.
+export interface MarkerEntry {
+  id: string
+  lat: number
+  lng: number
+  item: ProduceItem
+}
+
 // A single badge: the produce image with a lettered fallback if it 404s.
 function badgeCellHtml(item: ProduceItem): string {
   const initial = item.name.charAt(0).toUpperCase()
@@ -49,7 +61,7 @@ export function buildClusterHtml(items: ProduceItem[]): string {
 </script>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster'
@@ -63,8 +75,15 @@ const props = defineProps<{
   items: ProduceItem[]
   selectedId: string | null
   focus?: { lat: number; lng: number } | null
+  // false while Forage is open: swaps the origin markers below for
+  // forageMarkers instead of showing both at once.
+  originMarkersVisible?: boolean
+  forageMarkers?: MarkerEntry[]
 }>()
-const emit = defineEmits<{ select: [item: ProduceItem] }>()
+const emit = defineEmits<{
+  select: [item: ProduceItem]
+  mapClick: [point: { lat: number; lng: number }]
+}>()
 
 // Deepest zoom; clustering is switched off here so all markers explode apart.
 const MAX_ZOOM = 12
@@ -79,56 +98,58 @@ let resizeObserver: ResizeObserver | null = null
 let cleanupBasemap: (() => void) | null = null
 const markerById = new Map<string, L.Marker>()
 
-// Items sharing an identical origin point can never be separated by zooming,
-// so they would stay clustered (or stack) forever. Spread each such group onto
-// a tiny ring around the shared point; the offset is geographically negligible
+const activeEntries = computed<MarkerEntry[]>(() =>
+  props.originMarkersVisible === false
+    ? (props.forageMarkers ?? [])
+    : props.items.map((it) => ({ id: it.id, lat: it.origin.lat, lng: it.origin.lng, item: it })),
+)
+
+// Entries sharing an identical point can never be separated by zooming, so
+// they would stay clustered (or stack) forever. Spread each such group onto a
+// tiny ring around the shared point; the offset is geographically negligible
 // but lets zoom pull them apart automatically, no click needed.
-function markerPositions(items: ProduceItem[]): Map<string, [number, number]> {
-  const groups = new Map<string, ProduceItem[]>()
-  for (const it of items) {
-    const key = `${it.origin.lat.toFixed(3)},${it.origin.lng.toFixed(3)}`
+function spreadPositions(entries: MarkerEntry[]): Map<string, [number, number]> {
+  const groups = new Map<string, MarkerEntry[]>()
+  for (const e of entries) {
+    const key = `${e.lat.toFixed(3)},${e.lng.toFixed(3)}`
     const g = groups.get(key)
-    if (g) g.push(it)
-    else groups.set(key, [it])
+    if (g) g.push(e)
+    else groups.set(key, [e])
   }
   const positions = new Map<string, [number, number]>()
   const RING_DEG = 0.12
   for (const group of groups.values()) {
     if (group.length === 1) {
-      const it = group[0]
-      positions.set(it.id, [it.origin.lat, it.origin.lng])
+      positions.set(group[0].id, [group[0].lat, group[0].lng])
       continue
     }
-    group.forEach((it, i) => {
+    group.forEach((e, i) => {
       const angle = (2 * Math.PI * i) / group.length
-      positions.set(it.id, [
-        it.origin.lat + RING_DEG * Math.sin(angle),
-        it.origin.lng + RING_DEG * Math.cos(angle),
-      ])
+      positions.set(e.id, [e.lat + RING_DEG * Math.sin(angle), e.lng + RING_DEG * Math.cos(angle)])
     })
   }
   return positions
 }
 
-function render(items: ProduceItem[]) {
+function render(entries: MarkerEntry[]) {
   if (!map || !cluster) return
   cluster.clearLayers()
   markerById.clear()
-  const positions = markerPositions(items)
-  for (const item of items) {
+  const positions = spreadPositions(entries)
+  for (const entry of entries) {
     const icon = L.divIcon({
-      html: buildMarkerHtml(item),
+      html: buildMarkerHtml(entry.item),
       className: 'marker-wrap',
       iconSize: [MARKER_SIZE, MARKER_SIZE],
       iconAnchor: [MARKER_SIZE / 2, MARKER_SIZE / 2],
     })
-    const marker = L.marker(positions.get(item.id)!, { icon }) as L.Marker & {
+    const marker = L.marker(positions.get(entry.id)!, { icon }) as L.Marker & {
       item: ProduceItem
     }
     // Stash the item so the cluster icon builder can collage child images.
-    marker.item = item
-    marker.on('click', () => emit('select', item))
-    markerById.set(item.id, marker)
+    marker.item = entry.item
+    marker.on('click', () => emit('select', entry.item))
+    markerById.set(entry.id, marker)
     cluster.addLayer(marker)
   }
 }
@@ -168,17 +189,23 @@ onMounted(() => {
     },
   })
   map.addLayer(cluster)
-  render(props.items)
+  render(activeEntries.value)
+  map.on('click', (e: L.LeafletMouseEvent) => {
+    // Leaflet marker/cluster icons bubble their click up to the map's own
+    // 'click' event; without this guard, clicking a marker while "add a
+    // point by tapping the map" is armed would also register a stray point
+    // at the marker's on-screen position.
+    const target = e.originalEvent.target
+    if (target instanceof Element && target.closest('.leaflet-marker-icon')) return
+    emit('mapClick', { lat: e.latlng.lat, lng: e.latlng.lng })
+  })
   // The grid resizes the map when a sidebar opens or closes; Leaflet only
   // notices container size changes when told.
   resizeObserver = new ResizeObserver(() => map?.invalidateSize())
   resizeObserver.observe(el.value)
 })
 
-watch(
-  () => props.items,
-  (items) => render(items),
-)
+watch(activeEntries, (entries) => render(entries))
 watch(
   () => props.selectedId,
   (id) => {

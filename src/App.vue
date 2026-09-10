@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import WorldMap from './components/WorldMap.vue'
+import WorldMap, { type MarkerEntry } from './components/WorldMap.vue'
 import SidePanel from './components/SidePanel.vue'
 import SearchView from './components/SearchView.vue'
 import ForageView from './components/ForageView.vue'
@@ -16,6 +16,18 @@ const searchOpen = ref(false)
 const forageOpen = ref(false)
 const mapsOpen = ref(false)
 const mapFocus = ref<{ lat: number; lng: number } | null>(null)
+// Foraging's saved-point markers, relayed up from ForageView to replace the
+// normal origin markers on WorldMap while Forage is open.
+const forageMarkers = ref<MarkerEntry[]>([])
+// A click on the map, relayed down to ForageView so it can drop a point
+// there while its own "tap the map" pick mode is armed. A fresh object each
+// time (via the nonce) so the watcher fires even for two clicks at one spot.
+const mapClickSignal = ref<{ lat: number; lng: number; nonce: number } | null>(null)
+let mapClickNonce = 0
+function onMapClick(point: { lat: number; lng: number }) {
+  mapClickNonce++
+  mapClickSignal.value = { ...point, nonce: mapClickNonce }
+}
 
 // Detail-panel tab, kept here so it can be reflected in the URL.
 const TAB_SLUGS = {
@@ -194,7 +206,10 @@ onBeforeUnmount(() => {
       :items="filteredItems"
       :selected-id="selected?.id ?? null"
       :focus="mapFocus"
+      :origin-markers-visible="!forageOpen"
+      :forage-markers="forageMarkers"
       @select="selected = $event"
+      @map-click="onMapClick"
     />
     <SearchView
       v-if="searchOpen"
@@ -207,9 +222,11 @@ onBeforeUnmount(() => {
       v-if="forageOpen"
       :items="produce"
       :selected-id="selected?.id ?? null"
+      :map-click="mapClickSignal"
       @select="onSearchSelect"
       @close="forageOpen = false"
       @focus="mapFocus = $event"
+      @markers="forageMarkers = $event"
     />
     <MapsView
       v-if="mapsOpen"
