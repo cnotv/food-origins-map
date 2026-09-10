@@ -15,6 +15,7 @@ const activeFilter = ref<Category | 'all'>('all')
 const searchOpen = ref(false)
 const forageOpen = ref(false)
 const mapsOpen = ref(false)
+const mapFocus = ref<{ lat: number; lng: number } | null>(null)
 
 // Detail-panel tab, kept here so it can be reflected in the URL.
 const TAB_SLUGS = {
@@ -192,6 +193,7 @@ onBeforeUnmount(() => {
     <WorldMap
       :items="filteredItems"
       :selected-id="selected?.id ?? null"
+      :focus="mapFocus"
       @select="selected = $event"
     />
     <SearchView
@@ -207,6 +209,7 @@ onBeforeUnmount(() => {
       :selected-id="selected?.id ?? null"
       @select="onSearchSelect"
       @close="forageOpen = false"
+      @focus="mapFocus = $event"
     />
     <MapsView
       v-if="mapsOpen"

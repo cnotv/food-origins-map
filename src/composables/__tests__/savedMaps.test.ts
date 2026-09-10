@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { addLocalMap, listLocalMaps, removeLocalMap } from '../savedMaps'
 
 describe('savedMaps (localStorage)', () => {
@@ -23,9 +23,18 @@ describe('savedMaps (localStorage)', () => {
   })
 
   it('lists newest first', () => {
-    const first = addLocalMap('First', 'a=1')
-    const second = addLocalMap('Second', 'a=2')
-    expect(listLocalMaps().map((m) => m.id)).toEqual([second.id, first.id])
+    // Force distinct timestamps: two calls in the same millisecond would
+    // otherwise tie on createdAt and make the sort order ambiguous.
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1000)
+      const first = addLocalMap('First', 'a=1')
+      vi.setSystemTime(2000)
+      const second = addLocalMap('Second', 'a=2')
+      expect(listLocalMaps().map((m) => m.id)).toEqual([second.id, first.id])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('removes a map by id', () => {

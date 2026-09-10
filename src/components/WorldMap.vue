@@ -59,11 +59,18 @@ import { addBasemap } from '../composables/basemap'
 
 defineOptions({ name: 'WorldMap' })
 
-const props = defineProps<{ items: ProduceItem[]; selectedId: string | null }>()
+const props = defineProps<{
+  items: ProduceItem[]
+  selectedId: string | null
+  focus?: { lat: number; lng: number } | null
+}>()
 const emit = defineEmits<{ select: [item: ProduceItem] }>()
 
 // Deepest zoom; clustering is switched off here so all markers explode apart.
 const MAX_ZOOM = 12
+// A "city" zoom: close enough to read the surrounding area, not so close that
+// a whole metro area's worth of foods falls outside the viewport.
+const FOCUS_ZOOM = 10
 
 const el = ref<HTMLDivElement | null>(null)
 let map: L.Map | null = null
@@ -178,6 +185,13 @@ watch(
     if (!map || !id) return
     const m = markerById.get(id)
     if (m) map.panTo(m.getLatLng(), { animate: true })
+  },
+)
+watch(
+  () => props.focus,
+  (point) => {
+    if (!map || !point) return
+    map.setView([point.lat, point.lng], FOCUS_ZOOM, { animate: true })
   },
 )
 

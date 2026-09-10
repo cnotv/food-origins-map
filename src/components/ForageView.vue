@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { ProduceItem, Category } from '../data/types'
 import { badgeImagePath } from '../data/validators'
 import { categoryColor } from './WorldMap.vue'
@@ -14,7 +14,11 @@ import {
 } from '../data/season'
 
 const props = defineProps<{ items: ProduceItem[]; selectedId: string | null }>()
-const emit = defineEmits<{ select: [item: ProduceItem]; close: [] }>()
+const emit = defineEmits<{
+  select: [item: ProduceItem]
+  close: []
+  focus: [point: { lat: number; lng: number }]
+}>()
 
 const CATEGORY_LABEL: Record<string, string> = {
   fruit: 'Fruit',
@@ -35,6 +39,11 @@ const loading = ref(false)
 const error = ref('')
 // The resolved place, or null until the user picks a location.
 const place = ref<{ name: string; lat: number; lng: number } | null>(null)
+// Center and zoom the map to it as soon as it resolves, whether from the city
+// search or "Use my location".
+watch(place, (p) => {
+  if (p) emit('focus', { lat: p.lat, lng: p.lng })
+})
 
 const season = computed(() => (place.value ? currentSeasonForLat(place.value.lat) : null))
 const realm = computed(() =>
