@@ -29,8 +29,14 @@ describe('SidePanel', () => {
     expect(link.attributes('href')).toBe('https://www.tasteatlas.com/tomato')
     expect(link.attributes('target')).toBe('_blank')
   })
-  it('emits close when the close button is clicked', async () => {
-    const w = mount(SidePanel, { props: { item } })
+  it('lists recipes and links to the recipe sites of the origin', () => {
+    const w = mount(SidePanel, { props: { item, tab: 'Recipes' } })
+    expect(w.text()).toContain('caprese')
+    const links = w.findAll('.cook-links a')
+    expect(links.length).toBeGreaterThan(0)
+    expect(links.at(-1)!.attributes('href')).toBe('https://www.bbcgoodfood.com/search?q=Tomato')
+  })
+  it('emits close when the close button is clicked', async () => {    const w = mount(SidePanel, { props: { item } })
     await w.find('button.close').trigger('click')
     expect(w.emitted('close')).toBeTruthy()
   })

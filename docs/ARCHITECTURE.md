@@ -73,6 +73,8 @@ src/
 └── data/
     ├── types.ts                # ProduceItem, Category, CATEGORIES
     ├── validators.ts           # validateDataset() + image path helpers
+    ├── recipes.ts              # per-item English recipes from the cuisine of origin
+    ├── recipe-sites.ts         # region → country recipe site + per-item search links
     ├── produce.ts              # curated[] + exported produce = [...curated, ...produceExtra]
     └── produce-extra.ts        # bulk dataset (compact tuple rows → ProduceItem[])
 

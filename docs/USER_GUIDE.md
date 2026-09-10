@@ -82,6 +82,10 @@ side and shows:
   plus a few notable nutritional highlights (for example "Rich in lycopene" for
   tomatoes).
 - **A TasteAtlas link** to read more about the food.
+- **A Recipes tab** — classic English descriptions of how the food is eaten in
+  its home cuisine, plus "Cook it" links that search that country's own recipe
+  site for it (Giallo Zafferano for Italian foods, Just One Cookbook for
+  Japanese ones, and so on), ending with an international fallback.
 
 When you open a food, the map also gently recenters on its pin so you can see
 exactly where in the world it belongs.

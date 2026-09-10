@@ -1,4 +1,5 @@
 import type { FieldGuide } from './types'
+import { regionalRecipes } from './recipes'
 
 // Per-item field guide: harvest season, whether it is farmed and/or foraged,
 // whether the edible part is safe raw, notable side effects, and — where it
@@ -1530,6 +1531,8 @@ export function getFieldGuide(id: string) {
   const base = fieldGuide[id]
   const extra = itemDetails[id]
   const localName = localNames[id]
-  if (!base && !extra && !localName) return undefined
-  return { ...(base ?? ({} as Partial<FieldGuide>)), ...extra, localName }
+  // Hand-written recipes win; otherwise fall back to the per-origin recipe set.
+  const recipes = extra?.recipes ?? regionalRecipes[id]
+  if (!base && !extra && !localName && !recipes) return undefined
+  return { ...(base ?? ({} as Partial<FieldGuide>)), ...extra, recipes, localName }
 }
