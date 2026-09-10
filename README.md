@@ -15,6 +15,8 @@ supports zoom, pan, marker clustering, and filtering by category.
   how the dataset and Wikimedia photos were collected.
 - **[Tutorial](docs/TUTORIAL.md)** — build a clustered map whose points split
   apart with transitions.
+- **[Saved Maps](docs/SAVED_MAPS.md)** — saving/loading views, and enabling
+  Google sign-in + cloud sync.
 
 ## Tech stack
 
@@ -23,8 +25,10 @@ supports zoom, pan, marker clustering, and filtering by category.
 - **Vitest** + `@vue/test-utils` for tests
 - **sharp** for the image build-prep pipeline
 
-The app is fully static — no backend. The only network dependency at runtime is
-the CARTO basemap tiles.
+The app is fully static — no backend required. The only network dependency at
+runtime is the CARTO basemap tiles, plus the Wild Foraging panel's geocoding
+calls. **Saved maps** (see below) default to localStorage; optionally
+configuring Firebase adds Google sign-in and cloud-synced saved maps.
 
 ## Getting started
 
@@ -84,6 +88,15 @@ The Wikimedia Commons API is rate-limited, so the pipeline batches metadata
 lookups and retries downloads with backoff. A full run of 550+ items (with the
 search fallback) takes a while; it is idempotent and skips items whose WebP
 assets already exist.
+
+## Saved maps
+
+The **Maps** button in the topbar saves the current filter, selection, and
+detail tab under a name, and reloads it later. By default this is stored in
+the browser's localStorage; setting the `VITE_FIREBASE_*` environment
+variables (see [`.env.example`](.env.example)) additionally offers
+"Sign in with Google" so saved maps sync to that account via Firestore. See
+[docs/SAVED_MAPS.md](docs/SAVED_MAPS.md) for setup.
 
 ## Adding a produce item
 

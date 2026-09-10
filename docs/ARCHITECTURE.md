@@ -19,10 +19,12 @@ walkthrough of the map itself see [TUTORIAL.md](./TUTORIAL.md).
 | Basemap | **CARTO Positron (no labels)** | Roads/labels stripped so markers dominate |
 | Testing | **Vitest** + Vue Test Utils + jsdom | Unit, component, and integration tests |
 | Images | **sharp** + a Wikimedia Commons pipeline | Generates WebP badges & heroes offline |
+| Saved maps | `localStorage`, or **Firebase** (Auth + Firestore) if configured | Optional; see [SAVED_MAPS.md](./SAVED_MAPS.md) |
 
 There is no backend and no runtime data fetching for content: the food dataset
-is a typed, in-repo array and images are pre-generated static assets. The app is
-a pure static SPA.
+is a typed, in-repo array and images are pre-generated static assets. The app
+is a static SPA — the only optional exception is saved maps, which sync to
+Firestore instead of `localStorage` if a Firebase project is configured.
 
 ---
 
@@ -69,7 +71,14 @@ src/
 │   ├── WorldMap.vue            # Leaflet map, markers, clustering, pan-to-selection
 │   ├── SidePanel.vue           # Slide-in detail panel for the selected food
 │   ├── NutritionTable.vue      # Per-100g nutrition + highlights
-│   └── FilterChips.vue         # Category filter buttons
+│   ├── FilterChips.vue         # Category filter buttons
+│   └── MapsView.vue            # Saved-maps panel (save/load/delete a view)
+├── composables/
+│   ├── savedMaps.ts            # localStorage-backed saved-map CRUD
+│   ├── cloudMaps.ts            # Firestore-backed saved-map CRUD (signed-in users)
+│   └── useGoogleAuth.ts        # Firebase Google sign-in state
+├── lib/
+│   └── firebase.ts             # Lazy/optional Firebase app+auth+firestore init
 └── data/
     ├── types.ts                # ProduceItem, Category, CATEGORIES
     ├── validators.ts           # validateDataset() + image path helpers
@@ -205,6 +214,20 @@ driven entirely by props.
 
 Renders a chip per category (plus "All"), highlights the active one, and emits
 `change`. `App.vue` maps this to `activeFilter` and recomputes `filteredItems`.
+
+### MapsView.vue — saved maps
+
+Save/load/delete named snapshots of the current view. A saved map is a name
+plus `App.vue`'s `buildQueryString()` output (the same `?view=&filter=&item=&tab=`
+used for shareable URLs); loading one just re-applies that query string.
+Storage is either `localStorage` (default, via `composables/savedMaps.ts`) or,
+once signed in with Google, Firestore under `users/{uid}/savedMaps`
+(`composables/cloudMaps.ts` + `composables/useGoogleAuth.ts`). Firebase itself
+is optional and loaded lazily: `lib/firebase.ts` reads `VITE_FIREBASE_*` env
+vars and only `import()`s the Firebase SDK once a `VITE_FIREBASE_*` config is
+present and the Maps panel or sign-in is actually used — an unconfigured
+deployment ships none of that code and just shows localStorage-only saves.
+See [SAVED_MAPS.md](./SAVED_MAPS.md) for setup.
 
 ---
 
