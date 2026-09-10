@@ -249,6 +249,15 @@ per-point results instead (`origin-markers-visible="false"` + a `forage-markers`
 coordinates rather than its domestication origin, since that's what's actually relevant to
 foraging there. Closing Forage restores the origin markers.
 
+Forage markers render differently from origin markers too: a small category-colored dot
+(`buildDotHtml`) rather than a photo badge, in their own unclustered `L.LayerGroup`
+(`forageDots`) instead of the origin `markerClusterGroup`, positioned at the saved point's
+*exact* coordinates — no ring-spread. When several picked foods share one point, only the
+dot's on-screen pixels are nudged apart (a small fixed offset baked into the icon HTML), so
+the marker's real lat/lng — what a click's popup opens at — is never touched. Clicking a dot
+opens a small popup (`buildForagePopup`, a real `HTMLElement` so it can hold a working
+click listener) naming the food, with a "View details" link through to the full `SidePanel`.
+
 ---
 
 ## The image pipeline
