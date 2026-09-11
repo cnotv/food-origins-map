@@ -4,7 +4,6 @@ import WorldMap, { type MarkerEntry } from './components/WorldMap.vue'
 import SidePanel from './components/SidePanel.vue'
 import SearchView from './components/SearchView.vue'
 import ForageView from './components/ForageView.vue'
-import MapsView from './components/MapsView.vue'
 import FilterChips from './components/FilterChips.vue'
 import { produce } from './data/produce'
 import { CATEGORIES } from './data/types'
@@ -14,7 +13,9 @@ const selected = ref<ProduceItem | null>(null)
 const activeFilter = ref<Category | 'all'>('all')
 const searchOpen = ref(false)
 const forageOpen = ref(false)
-const mapsOpen = ref(false)
+// Mobile only: the compact filter popover under the toolbar's filter icon
+// (desktop shows FilterChips inline in the topbar instead — see template).
+const filterOpen = ref(false)
 const mapFocus = ref<{ lat: number; lng: number } | null>(null)
 // Foraging's saved-point markers, relayed up from ForageView to replace the
 // normal origin markers on WorldMap while Forage is open.
@@ -43,11 +44,11 @@ const SLUG_TABS = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [
 >
 const detailTab = ref<Tab>('About')
 
-// Search, Forage and Maps share the same left slot, so only one is open at a time.
+// Search and Forage share the same slot, so only one is open at a time.
 function closeOverlays() {
   searchOpen.value = false
   forageOpen.value = false
-  mapsOpen.value = false
+  filterOpen.value = false
 }
 function toggleSearch() {
   const next = !searchOpen.value
@@ -59,10 +60,14 @@ function toggleForage() {
   closeOverlays()
   forageOpen.value = next
 }
-function toggleMaps() {
-  const next = !mapsOpen.value
+function toggleFilter() {
+  const next = !filterOpen.value
   closeOverlays()
-  mapsOpen.value = next
+  filterOpen.value = next
+}
+function onMobileFilterChange(value: Category | 'all') {
+  activeFilter.value = value
+  filterOpen.value = false
 }
 
 const filteredItems = computed(() =>
@@ -78,8 +83,7 @@ const onSearchSelect = (item: ProduceItem) => {
 // Restore state from the URL on load, and keep the URL in step with the open
 // panel (?view=search|forage), the selected item (?item=<id>), its active tab
 // (?tab=<slug>) and the category filter (?filter=<category>), so views are
-// shareable, bookmarkable, and reusable as the payload for a saved map (see
-// MapsView, which stores this same query string under a name).
+// shareable and bookmarkable.
 function buildQueryString(): string {
   const p = new URLSearchParams()
   if (searchOpen.value) p.set('view', 'search')
@@ -97,7 +101,6 @@ function applyUrl() {
   const view = p.get('view')
   searchOpen.value = view === 'search'
   forageOpen.value = view === 'forage'
-  mapsOpen.value = false
   const filter = p.get('filter') as Category | null
   activeFilter.value = filter && CATEGORIES.includes(filter) ? filter : 'all'
   const id = p.get('item')
@@ -123,16 +126,6 @@ function onPopState() {
   syncing = false
 }
 
-// Loading a saved map (MapsView) replays it the same way as following a
-// bookmarked URL: rewrite the query string, then re-derive state from it.
-function onLoadMap(query: string) {
-  syncing = true
-  history.replaceState(null, '', query ? `?${query}` : location.pathname)
-  applyUrl()
-  syncing = false
-  mapsOpen.value = false
-}
-
 // GitHub's new-issue form pre-filled with the current app state.
 // A static client can't create issues directly without exposing a token,
 // so the user confirms with one click on GitHub.
@@ -155,11 +148,11 @@ const bugReportUrl = computed(() => {
 
 const onKey = (e: KeyboardEvent) => {
   if (e.key !== 'Escape') return
-  // Close the topmost overlay first: detail panel, then search/forage.
+  // Close the topmost overlay first: detail panel, then search/forage/filter.
   if (selected.value) selected.value = null
   else if (searchOpen.value) searchOpen.value = false
   else if (forageOpen.value) forageOpen.value = false
-  else if (mapsOpen.value) mapsOpen.value = false
+  else if (filterOpen.value) filterOpen.value = false
 }
 onMounted(() => {
   applyUrl()
@@ -173,6 +166,7 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div class="app-shell">
+    <!-- Desktop: a conventional header bar above the map. -->
     <header class="topbar">
       <h1>Food Origins Map</h1>
       <FilterChips :active="activeFilter" @change="activeFilter = $event" />
@@ -192,16 +186,44 @@ onBeforeUnmount(() => {
       >
         Search
       </button>
-      <button
-        class="maps-toggle"
-        :class="{ active: mapsOpen }"
-        :aria-pressed="mapsOpen"
-        @click="toggleMaps"
-      >
-        Maps
-      </button>
       <a class="bug-link" :href="bugReportUrl" target="_blank" rel="noopener">bugs?</a>
     </header>
+
+    <!-- Mobile: the map fills the screen; these float over it in a corner
+         instead of pushing it out of view (see .mobile-toolbar below). -->
+    <div class="mobile-toolbar">
+      <button
+        class="mt-btn"
+        :class="{ active: searchOpen }"
+        :aria-pressed="searchOpen"
+        aria-label="Search foods"
+        @click="toggleSearch"
+      >
+        🔍
+      </button>
+      <button
+        class="mt-btn"
+        :class="{ active: filterOpen }"
+        :aria-pressed="filterOpen"
+        aria-label="Filter by type"
+        @click="toggleFilter"
+      >
+        ▤
+      </button>
+      <button
+        class="mt-btn"
+        :class="{ active: forageOpen }"
+        :aria-pressed="forageOpen"
+        aria-label="Forage"
+        @click="toggleForage"
+      >
+        🌿
+      </button>
+    </div>
+    <div v-if="filterOpen" class="mobile-filter-pop">
+      <FilterChips :active="activeFilter" @change="onMobileFilterChange" />
+    </div>
+
     <WorldMap
       :items="filteredItems"
       :selected-id="selected?.id ?? null"
@@ -228,12 +250,6 @@ onBeforeUnmount(() => {
       @focus="mapFocus = $event"
       @markers="forageMarkers = $event"
     />
-    <MapsView
-      v-if="mapsOpen"
-      :current-query="buildQueryString()"
-      @load="onLoadMap"
-      @close="mapsOpen = false"
-    />
     <SidePanel
       :item="selected"
       :tab="detailTab"
@@ -256,8 +272,7 @@ onBeforeUnmount(() => {
    shell layout is assigned here in one place. */
 .topbar { grid-area: header; }
 .app-shell :deep(.search-view),
-.app-shell :deep(.forage-view),
-.app-shell :deep(.maps-view) { grid-area: search; }
+.app-shell :deep(.forage-view) { grid-area: search; }
 .app-shell :deep(.world-map) { grid-area: map; }
 .app-shell :deep(.side-panel) { grid-area: panel; }
 .topbar {
@@ -269,38 +284,58 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 .topbar h1 { font-size: 18px; margin: 0; white-space: nowrap; }
-.search-toggle, .forage-toggle, .maps-toggle {
+.search-toggle, .forage-toggle {
   border: 1px solid var(--border-strong); background: var(--surface);
   color: var(--text); border-radius: 16px; padding: 6px 14px; font-size: 13px;
   cursor: pointer; white-space: nowrap;
 }
 .forage-toggle { margin-left: auto; }
-.search-toggle.active, .forage-toggle.active, .maps-toggle.active {
+.search-toggle.active, .forage-toggle.active {
   background: var(--accent); color: var(--on-accent); border-color: var(--accent);
 }
 .bug-link { flex: none; font-size: 13px; color: var(--text-muted); }
 .bug-link:hover { color: var(--text); }
+
+/* Mobile toolbar + filter popover: hidden on desktop, where the topbar above
+   already carries these controls inline. */
+.mobile-toolbar, .mobile-filter-pop { display: none; }
+
 @media (max-width: 640px) {
-  /* Phones cannot fit sidebars next to the map: search swaps into the map
-     slot, and the detail panel becomes a bottom row that pushes the map up. */
+  /* The map is the persistent base layer on phones — no sidebar, no full-
+     screen takeover. The topbar is replaced by a small floating toolbar
+     (below) that sits on top of the map in a corner; only the detail panel
+     still claims a grid row of its own, as a bottom sheet when a food is
+     selected. */
   .app-shell {
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: 1fr auto;
     grid-template-columns: 1fr;
-    grid-template-areas: 'header' 'map' 'panel';
+    grid-template-areas: 'map' 'panel';
   }
-  .app-shell :deep(.search-view),
-  .app-shell :deep(.forage-view),
-  .app-shell :deep(.maps-view) {
-    grid-area: map; z-index: 2; position: relative; min-width: 0;
+  .topbar { display: none; }
+
+  .mobile-toolbar {
+    display: flex; gap: 8px;
+    position: fixed; top: 12px; right: 12px; z-index: 600;
   }
-  .topbar { flex-wrap: wrap; gap: 8px; }
-  .topbar h1 { flex: 1; }
-  .bug-link { order: 2; }
-  /* Scoped styles reach the FilterChips root element. */
-  .topbar .chips-row { order: 3; flex-basis: 100%; }
-  /* Forage + Search + Maps share the next row, side by side. */
-  .forage-toggle { margin-left: 0; order: 4; flex: 1; }
-  .search-toggle { margin-left: 0; order: 5; flex: 1; }
-  .maps-toggle { margin-left: 0; order: 6; flex: 1; }
+  .mt-btn {
+    width: 42px; height: 42px; border-radius: 50%; font-size: 18px;
+    border: 1px solid var(--border-strong); background: var(--surface);
+    color: var(--text); box-shadow: 0 2px 8px var(--shadow);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .mt-btn.active {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+  }
+  .mobile-filter-pop {
+    display: block;
+    position: fixed; top: 60px; right: 12px; z-index: 600;
+    max-width: calc(100vw - 24px);
+    background: var(--surface); border-radius: 12px; box-shadow: 0 4px 16px var(--shadow-strong);
+    padding: 8px;
+  }
+
+  /* Search/Forage float above the map as a capped-height card instead of
+     replacing it (each is position:fixed in its own mobile media query, so
+     it takes no grid track — see SearchView.vue / ForageView.vue). */
 }
 </style>

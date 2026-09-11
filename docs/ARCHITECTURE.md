@@ -19,12 +19,10 @@ walkthrough of the map itself see [TUTORIAL.md](./TUTORIAL.md).
 | Basemap | **CARTO Positron (no labels)** | Roads/labels stripped so markers dominate |
 | Testing | **Vitest** + Vue Test Utils + jsdom | Unit, component, and integration tests |
 | Images | **sharp** + a Wikimedia Commons pipeline | Generates WebP badges & heroes offline |
-| Saved maps | `localStorage`, or **Firebase** (Auth + Firestore) if configured | Optional; see [SAVED_MAPS.md](./SAVED_MAPS.md) |
 
 There is no backend and no runtime data fetching for content: the food dataset
 is a typed, in-repo array and images are pre-generated static assets. The app
-is a static SPA — the only optional exception is saved maps, which sync to
-Firestore instead of `localStorage` if a Firebase project is configured.
+is a pure static SPA.
 
 ---
 
@@ -72,15 +70,10 @@ src/
 │   ├── SidePanel.vue           # Slide-in detail panel for the selected food
 │   ├── NutritionTable.vue      # Per-100g nutrition + highlights
 │   ├── FilterChips.vue         # Category filter buttons
-│   ├── MapsView.vue            # Saved-maps panel (save/load/delete a view)
 │   └── ForageView.vue          # Forage panel: save points, per-point results, map toggles
 ├── composables/
-│   ├── savedMaps.ts            # localStorage-backed saved-map CRUD
-│   ├── cloudMaps.ts            # Firestore-backed saved-map CRUD (signed-in users)
-│   ├── useGoogleAuth.ts        # Firebase Google sign-in state
-│   └── savedPoints.ts          # localStorage-backed saved-point CRUD (Forage)
-├── lib/
-│   └── firebase.ts             # Lazy/optional Firebase app+auth+firestore init
+│   ├── savedPoints.ts          # localStorage-backed saved-point CRUD (Forage)
+│   └── recentFoods.ts          # localStorage-backed "last used" food MRU list (Forage)
 └── data/
     ├── types.ts                # ProduceItem, Category, CATEGORIES
     ├── validators.ts           # validateDataset() + image path helpers
@@ -217,20 +210,6 @@ driven entirely by props.
 Renders a chip per category (plus "All"), highlights the active one, and emits
 `change`. `App.vue` maps this to `activeFilter` and recomputes `filteredItems`.
 
-### MapsView.vue — saved maps
-
-Save/load/delete named snapshots of the current view. A saved map is a name
-plus `App.vue`'s `buildQueryString()` output (the same `?view=&filter=&item=&tab=`
-used for shareable URLs); loading one just re-applies that query string.
-Storage is either `localStorage` (default, via `composables/savedMaps.ts`) or,
-once signed in with Google, Firestore under `users/{uid}/savedMaps`
-(`composables/cloudMaps.ts` + `composables/useGoogleAuth.ts`). Firebase itself
-is optional and loaded lazily: `lib/firebase.ts` reads `VITE_FIREBASE_*` env
-vars and only `import()`s the Firebase SDK once a `VITE_FIREBASE_*` config is
-present and the Maps panel or sign-in is actually used — an unconfigured
-deployment ships none of that code and just shows localStorage-only saves.
-See [SAVED_MAPS.md](./SAVED_MAPS.md) for setup.
-
 ### ForageView.vue — saved points
 
 Foraging is built around **saved points**, not the single current-location search of
@@ -258,6 +237,34 @@ first food's category with a small count badge when there's more than one. Click
 opens a popup (`buildForagePopup`, a real `HTMLElement` so each row can hold a working click
 listener) listing every picked food at that point as an image + name, each a link through to
 the full `SidePanel`.
+
+Every point card also carries a **"last used" shortcut row** (`composables/recentFoods.ts`,
+a small global `localStorage` MRU list, most-recent first) pinned above its own filtered
+results — picking a food anywhere pushes it there, so re-picking a favorite at a new point
+doesn't mean re-filtering the whole list. Each shortcut has its own ✕ to drop it from the
+list without touching any point's actual selection. A newly created point scrolls itself
+into view (`pointEls` + `scrollIntoView`) so defining one — city, location, or tap — lands
+the visitor straight on its pick list.
+
+### Mobile layout: the map is the base layer
+
+Below 640px, `App.vue` drops the header bar entirely (`.topbar { display: none }`) and
+replaces it with a small floating icon cluster (`.mobile-toolbar`: search, filter, forage)
+positioned `position: fixed` over the map, which now fills the *entire* viewport
+(`grid-template-areas: 'map' 'panel'` — only the detail `SidePanel` still claims a row, as
+a bottom sheet). `SearchView`/`ForageView` become capped-height floating cards
+(`position: fixed; max-height: 70vh`) anchored below the toolbar instead of swapping into
+the map's grid area — the map stays visible around and behind them, which is the whole
+point: earlier mobile builds replaced the map with whatever panel was open, so it was
+never visible once you touched Search or Forage. `FilterChips` gets the same
+popover treatment (`.mobile-filter-pop`, toggled by `filterOpen`) rather than sitting
+inline in a header that no longer exists on this breakpoint.
+
+One added wrinkle: while "tap the map to add a point" is armed, `ForageView` hides itself
+entirely (`.forage-view.picking { display: none }`) rather than leaving only the sliver of
+map around its card tappable, replaced by a small cancelable `.picking-banner`; it
+reappears (scrolled to the new point) once you tap. Desktop is unaffected — it keeps the
+original header + sidebar grid, which already left the map mostly visible.
 
 ---
 

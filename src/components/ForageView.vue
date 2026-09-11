@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import type { ProduceItem, Category } from '../data/types'
 import { badgeImagePath } from '../data/validators'
 import { categoryColor, type MarkerEntry } from './WorldMap.vue'
@@ -19,6 +19,7 @@ import {
   toggleFoodVisibility,
   type SavedPoint,
 } from '../composables/savedPoints'
+import { listRecentFoods, pushRecentFood, removeRecentFood } from '../composables/recentFoods'
 
 const props = defineProps<{
   items: ProduceItem[]
@@ -57,10 +58,20 @@ const pickMode = ref(false)
 
 const points = ref<SavedPoint[]>(listSavedPoints())
 
+// Scrolled into view right after a point is created, so "define a point"
+// (tap/location/city) lands the visitor straight on its pick list instead of
+// leaving them to find it in a long list below.
+const pointEls = new Map<string, HTMLElement>()
+function setPointRef(id: string, el: Element | null) {
+  if (el instanceof HTMLElement) pointEls.set(id, el)
+  else pointEls.delete(id)
+}
+
 function addPoint(label: string, lat: number, lng: number) {
-  addSavedPoint(label, lat, lng)
+  const point = addSavedPoint(label, lat, lng)
   points.value = listSavedPoints()
   emit('focus', { lat, lng })
+  nextTick(() => pointEls.get(point.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
 }
 
 watch(
@@ -77,9 +88,30 @@ function removePoint(id: string) {
   points.value = points.value.filter((p) => p.id !== id)
 }
 
+// A global "last used" shortlist (across all points), pinned above each
+// point's filtered results so re-picking a favorite doesn't mean scrolling
+// or re-filtering.
+const recentIds = ref<string[]>(listRecentFoods())
+const recentItems = computed(() =>
+  recentIds.value
+    .map((id) => props.items.find((it) => it.id === id))
+    .filter((it): it is ProduceItem => !!it),
+)
+
 function toggleFood(pointId: string, foodId: string) {
+  const point = points.value.find((p) => p.id === pointId)
+  const turningOn = !point?.visibleFoodIds.includes(foodId)
   toggleFoodVisibility(pointId, foodId)
   points.value = listSavedPoints()
+  if (turningOn) {
+    pushRecentFood(foodId)
+    recentIds.value = listRecentFoods()
+  }
+}
+
+function removeRecent(id: string) {
+  removeRecentFood(id)
+  recentIds.value = listRecentFoods()
 }
 
 const seasonFor = (point: SavedPoint) => currentSeasonForLat(point.lat)
@@ -180,10 +212,22 @@ const onThumbError = (e: Event) => {
   const fallback = img.nextElementSibling as HTMLElement | null
   if (fallback) fallback.style.display = 'flex'
 }
+// The compact "last used" chips have no fallback-initial sibling to swap in
+// (there's no room for it at that size) — just hide a broken thumbnail.
+const onChipThumbError = (e: Event) => {
+  ;(e.target as HTMLImageElement).style.display = 'none'
+}
 </script>
 
 <template>
-  <aside class="forage-view" role="dialog" aria-label="Forage near a location">
+  <!-- While pick mode is armed, the floating card (mobile) hides itself so
+       the whole map is tappable instead of just the sliver around it — this
+       banner is the only thing that stays up, as a cancelable reminder. -->
+  <div v-if="pickMode" class="picking-banner">
+    <span>Tap the map to place your point…</span>
+    <button type="button" aria-label="Cancel adding a point" @click="pickMode = false">✕</button>
+  </div>
+  <aside class="forage-view" :class="{ picking: pickMode }" role="dialog" aria-label="Forage near a location">
     <header class="forage-head">
       <div class="row">
         <h2>Forage now</h2>
@@ -217,7 +261,7 @@ const onThumbError = (e: Event) => {
     </header>
 
     <div v-if="points.length" class="points">
-      <div v-for="point in points" :key="point.id" class="point">
+      <div v-for="point in points" :key="point.id" class="point" :ref="(el) => setPointRef(point.id, el as Element | null)">
         <div class="point-head">
           <div class="point-title">
             <strong>{{ point.label }}</strong>
@@ -233,6 +277,33 @@ const onThumbError = (e: Event) => {
             ✕
           </button>
         </div>
+
+        <div v-if="recentItems.length" class="recent">
+          <span class="recent-label">Last used</span>
+          <div class="recent-row">
+          <span v-for="item in recentItems" :key="item.id" class="recent-chip">
+            <button
+              type="button"
+              class="recent-pick"
+              :class="{ picked: point.visibleFoodIds.includes(item.id) }"
+              :title="`Show ${item.name} on the map here`"
+              @click="toggleFood(point.id, item.id)"
+            >
+              <img :src="badgeImagePath(item.id)" :alt="item.name" @error="onChipThumbError" />
+              {{ item.name }}
+            </button>
+            <button
+              type="button"
+              class="recent-x"
+              aria-label="Remove from last used"
+              @click="removeRecent(item.id)"
+            >
+              ✕
+            </button>
+          </span>
+          </div>
+        </div>
+
         <ul class="results">
           <li v-if="filteredFor(point).length === 0" class="empty">
             Nothing in season here{{ category !== 'all' ? ' for this filter' : '' }} right now.
@@ -329,6 +400,28 @@ const onThumbError = (e: Event) => {
 }
 .point-meta { font-size: 11px; color: var(--text-faint); }
 .point-hint { font-size: 11px; color: var(--text-faint); font-style: italic; }
+
+.recent { padding: 8px 16px; border-bottom: 1px solid var(--border); }
+.recent-label {
+  display: block; margin-bottom: 6px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-faint);
+}
+.recent-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.recent-chip {
+  display: flex; align-items: stretch; border: 1px solid var(--border-strong);
+  border-radius: 14px; overflow: hidden;
+}
+.recent-pick {
+  display: flex; align-items: center; gap: 6px; border: none; background: var(--surface);
+  color: var(--text); padding: 4px 10px 4px 4px; font-size: 12px; cursor: pointer;
+}
+.recent-pick.picked { background: var(--accent); color: var(--on-accent); }
+.recent-pick img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+.recent-x {
+  flex: none; border: none; border-left: 1px solid var(--border-strong); background: var(--surface-2);
+  color: var(--text-faint); width: 22px; font-size: 10px; cursor: pointer;
+}
+.recent-x:hover { color: var(--warn-text); }
 .remove-point {
   flex: none; border: none; background: none; color: var(--text-faint);
   width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px;
@@ -362,7 +455,30 @@ const onThumbError = (e: Event) => {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cat { flex: none; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+.picking-banner { display: none; }
+
 @media (max-width: 640px) {
-  .forage-view { width: 100%; }
+  /* A floating dropdown over the map, same treatment as SearchView — see the
+     comment there. */
+  .forage-view {
+    position: fixed; top: 64px; left: 12px; right: 12px; width: auto;
+    max-height: 70vh; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 8px 24px var(--shadow-strong); z-index: 500;
+  }
+  /* Armed to place a point: get out of the way entirely so the whole map is
+     tappable, not just the sliver around this card. */
+  .forage-view.picking { display: none; }
+  .picking-banner {
+    display: flex; align-items: center; gap: 8px;
+    position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 700;
+    background: var(--accent); color: var(--on-accent); border-radius: 20px;
+    padding: 8px 8px 8px 16px; font-size: 13px; white-space: nowrap;
+    box-shadow: 0 4px 16px var(--shadow-strong);
+  }
+  .picking-banner button {
+    flex: none; border: none; background: rgba(255, 255, 255, 0.25); color: inherit;
+    border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer;
+  }
 }
 </style>

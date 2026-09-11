@@ -10,5 +10,4 @@ description alike — with a link to see it live, not just a description of the 
 
 Point the link at the specific view being demonstrated, not just the bare root — e.g. "open
 Forage, then use your location" rather than only the domain — so whoever opens it lands on the
-state being shown off, the same way `docs/SAVED_MAPS.md` and the PR body's `Preview:` line
-already do.
+state being shown off, the same way the PR body's `Preview:` line already does.

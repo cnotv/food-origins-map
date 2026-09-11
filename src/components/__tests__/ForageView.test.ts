@@ -157,4 +157,37 @@ describe('ForageView', () => {
     await wrapper.find('.close').trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()
   })
+
+  it('picking a food surfaces it as "last used" on every point, removable without affecting the pick', async () => {
+    const a = addSavedPoint('Point A', 1, 1)
+    const b = addSavedPoint('Point B', 2, 2)
+    const wrapper = mountView()
+    await flushPromises()
+
+    // No last-used shortlist yet.
+    expect(wrapper.findAll('.recent-chip')).toHaveLength(0)
+
+    // Pick it for point A.
+    const pointCards = wrapper.findAll('.point')
+    await pointCards[0].find('.toggle input').setValue(true)
+    await flushPromises()
+
+    // Both point cards now offer it as a "last used" shortcut.
+    expect(wrapper.findAll('.recent-chip')).toHaveLength(2)
+
+    // Picking it from point B's shortcut toggles it on there too.
+    const bCard = wrapper.findAll('.point')[1]
+    await bCard.find('.recent-pick').trigger('click')
+    await flushPromises()
+    expect(listSavedPoints().find((p) => p.id === b.id)?.visibleFoodIds).toEqual(['test-fruit'])
+    expect(bCard.find('.recent-pick').classes()).toContain('picked')
+
+    // Removing it from "last used" clears the shortcut everywhere without
+    // touching either point's own selection.
+    await wrapper.find('.recent-x').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('.recent-chip')).toHaveLength(0)
+    expect(listSavedPoints().find((p) => p.id === a.id)?.visibleFoodIds).toEqual(['test-fruit'])
+    expect(listSavedPoints().find((p) => p.id === b.id)?.visibleFoodIds).toEqual(['test-fruit'])
+  })
 })

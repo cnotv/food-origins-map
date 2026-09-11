@@ -8,6 +8,12 @@ class ResizeObserverStub {
 }
 ;(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = ResizeObserverStub
 
+// jsdom doesn't implement scrollIntoView either (ForageView scrolls a newly
+// created point's card into view).
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}
+
 if (!window.matchMedia) {
   window.matchMedia = (query: string) =>
     ({

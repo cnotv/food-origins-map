@@ -164,6 +164,14 @@ const onThumbError = (e: Event) => {
 }
 .cat { flex: none; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
 @media (max-width: 640px) {
-  .search-view { width: 100%; }
+  /* A floating dropdown over the map (see App.vue's .mobile-toolbar) rather
+     than a panel that replaces it — the map stays visible around and below
+     it. Capped height, not full-screen, so there's always a glimpse of map
+     even with a long results list; .results keeps its own internal scroll. */
+  .search-view {
+    position: fixed; top: 64px; left: 12px; right: 12px; width: auto;
+    max-height: 70vh; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 8px 24px var(--shadow-strong); z-index: 500;
+  }
 }
 </style>
