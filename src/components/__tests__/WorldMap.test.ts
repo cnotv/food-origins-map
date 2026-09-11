@@ -21,17 +21,16 @@ describe('WorldMap marker helpers', () => {
 })
 
 describe('buildDotHtml (forage markers)', () => {
-  it('colors the dot by category', () => {
-    expect(buildDotHtml(item)).toContain(categoryColor('fruit'))
+  it('colors the dot with the given color', () => {
+    expect(buildDotHtml(categoryColor('fruit'))).toContain(categoryColor('fruit'))
   })
-  it('defaults to no pixel offset', () => {
-    const html = buildDotHtml(item)
-    expect(html).toContain('left:14px')
-    expect(html).toContain('top:14px')
+  it('shows no count badge for a single food', () => {
+    expect(buildDotHtml(categoryColor('fruit'))).not.toContain('forage-dot-count')
+    expect(buildDotHtml(categoryColor('fruit'), 1)).not.toContain('forage-dot-count')
   })
-  it('applies a given pixel offset relative to the icon box center', () => {
-    const html = buildDotHtml(item, 5, -3)
-    expect(html).toContain('left:19px')
-    expect(html).toContain('top:11px')
+  it('shows a count badge when more than one food shares the point', () => {
+    const html = buildDotHtml(categoryColor('fruit'), 3)
+    expect(html).toContain('forage-dot-count')
+    expect(html).toContain('>3<')
   })
 })

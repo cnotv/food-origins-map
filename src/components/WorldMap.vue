@@ -11,9 +11,8 @@ const COLORS: Record<Category, string> = {
 export const categoryColor = (c: Category) => COLORS[c]
 
 const MARKER_SIZE = 80
-// Forage dot: a small fixed icon box the dot can be nudged around inside
-// (see buildDotHtml) without Leaflet clipping it at the edges.
-const DOT_SIZE = 14
+// Forage dot: the icon box is bigger than the dot itself (see .forage-dot in
+// <style>) to leave room for the count badge in the corner.
 const DOT_BOX = 28
 
 // One marker to place: `id` is the DOM/cluster key (must be unique across the
@@ -44,16 +43,15 @@ export function buildMarkerHtml(item: ProduceItem): string {
   </div>`
 }
 
-// Forage-mode marker: a small category-colored dot rather than a photo badge,
-// since it sits at the exact saved point (no ring-spread) and several can
-// share one point — the dot only needs to be a click target, not an image.
-// `dx`/`dy` nudge it a few CSS pixels within its icon box (see DOT_BOX below)
-// so dots sharing a point don't fully overlap; the marker's own lat/lng
-// (what popups/programmatic access see) stays exactly the saved point.
-export function buildDotHtml(item: ProduceItem, dx = 0, dy = 0): string {
-  const color = COLORS[item.category]
-  const c = DOT_BOX / 2
-  return `<span class="forage-dot" style="background:${color}; left:${c + dx}px; top:${c + dy}px;" title="${item.name}"></span>`
+// Forage-mode marker: a small colored dot at the exact saved point, rather
+// than a photo badge — one dot per point, however many foods were picked
+// there, since it's a click target for the popup below rather than an image
+// in its own right. `count` shows a small badge when more than one food
+// shares the point; `color` is the first food's category (a mixed-category
+// point still needs one color to draw).
+export function buildDotHtml(color: string, count = 1): string {
+  const badge = count > 1 ? `<span class="forage-dot-count">${count}</span>` : ''
+  return `<span class="forage-dot" style="background:${color}"></span>${badge}`
 }
 
 // Cluster icon. For 4 or fewer children the badges are collaged into a small
@@ -151,33 +149,31 @@ function spreadPositions(entries: MarkerEntry[]): Map<string, [number, number]> 
   return positions
 }
 
-// Small fixed pixel offsets for dots sharing one exact saved point, arranged
-// in a ring around it — a screen-space nudge, not a geographic one, so it's
-// the same few pixels apart at any zoom and never moves the marker's actual
-// lat/lng (what the popup opens at) off the real point.
-function dotOffsets(count: number): { dx: number; dy: number }[] {
-  if (count <= 1) return [{ dx: 0, dy: 0 }]
-  const radius = 7
-  return Array.from({ length: count }, (_, i) => {
-    const angle = (2 * Math.PI * i) / count
-    return { dx: Math.round(radius * Math.cos(angle)), dy: Math.round(radius * Math.sin(angle)) }
-  })
-}
-
-// The popup a forage dot opens on click: just enough to name what's there,
-// plus a way through to the full side panel for anyone who wants it.
-function buildForagePopup(item: ProduceItem): HTMLElement {
+// The popup a forage dot opens on click: every food picked at that exact
+// point, each just an image + name, since the dot itself already told the
+// visitor "something's here" — the popup's job is only to say what, with a
+// click through to the full side panel for whichever one they want.
+function buildForagePopup(items: ProduceItem[]): HTMLElement {
   const el = document.createElement('div')
   el.className = 'forage-popup-body'
-  el.innerHTML = `
-    <strong class="forage-popup-name">${item.name}</strong>
-    <span class="forage-popup-region" style="color:${categoryColor(item.category)}">${item.origin.region}</span>
-    <button type="button" class="forage-popup-details">View details</button>
-  `
-  el.querySelector('.forage-popup-details')?.addEventListener('click', () => emit('select', item))
+  el.innerHTML = items
+    .map(
+      (item) => `
+        <button type="button" class="forage-popup-item">
+          <img src="${badgeImagePath(item.id)}" alt="" onerror="this.style.display='none'" />
+          <span>${item.name}</span>
+        </button>`,
+    )
+    .join('')
+  el.querySelectorAll<HTMLButtonElement>('.forage-popup-item').forEach((btn, i) => {
+    btn.addEventListener('click', () => emit('select', items[i]))
+  })
   return el
 }
 
+// One dot per saved point, however many foods were picked there — grouping
+// by the exact coordinates means there's never more than one marker sitting
+// on a given spot, however many foods it opens a popup onto.
 function renderForageDots(entries: MarkerEntry[]) {
   if (!map || !forageDots) return
   forageDots.clearLayers()
@@ -189,19 +185,16 @@ function renderForageDots(entries: MarkerEntry[]) {
     else groups.set(key, [e])
   }
   for (const group of groups.values()) {
-    const offsets = dotOffsets(group.length)
-    group.forEach((entry, i) => {
-      const { dx, dy } = offsets[i]
-      const icon = L.divIcon({
-        html: buildDotHtml(entry.item, dx, dy),
-        className: 'forage-dot-wrap',
-        iconSize: [DOT_BOX, DOT_BOX],
-        iconAnchor: [DOT_BOX / 2, DOT_BOX / 2],
-      })
-      const marker = L.marker([entry.lat, entry.lng], { icon })
-      marker.bindPopup(buildForagePopup(entry.item), { className: 'forage-popup' })
-      forageDots!.addLayer(marker)
+    const items = group.map((e) => e.item)
+    const icon = L.divIcon({
+      html: buildDotHtml(categoryColor(items[0].category), items.length),
+      className: 'forage-dot-wrap',
+      iconSize: [DOT_BOX, DOT_BOX],
+      iconAnchor: [DOT_BOX / 2, DOT_BOX / 2],
     })
+    const marker = L.marker([group[0].lat, group[0].lng], { icon })
+    marker.bindPopup(buildForagePopup(items), { className: 'forage-popup' })
+    forageDots.addLayer(marker)
   }
 }
 
@@ -378,32 +371,46 @@ onBeforeUnmount(() => {
   background: rgba(51, 51, 51, 0.9); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
-/* Forage dots: a plain colored disc at the exact saved point. The icon box
-   is bigger than the dot itself so a pixel offset (see buildDotHtml) has
-   room to nudge it without Leaflet clipping the edge. */
-.forage-dot-wrap { background: transparent; border: none; }
+/* Forage dots: one plain colored disc at the exact saved point, however many
+   foods were picked there (see renderForageDots) — the icon box is bigger
+   than the dot itself so the small count badge has a corner to sit in. */
+.forage-dot-wrap { position: relative; background: transparent; border: none; }
 .forage-dot {
-  position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px;
-  border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  position: absolute; top: 50%; left: 50%; width: 14px; height: 14px;
+  margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+.forage-dot-count {
+  position: absolute; top: 2px; right: 2px; min-width: 14px; height: 14px;
+  padding: 0 2px; border-radius: 7px; background: #222; color: #fff;
+  font-size: 9px; font-weight: 700; line-height: 14px; text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-/* The popup a forage dot opens: a quick "what is this" with a little bounce
-   on the way in, plus a link through to the full side panel. */
+/* The popup a forage dot opens: every food at that point as an image + name
+   row, each a link through to the full side panel, with a little bounce on
+   the way in. */
 .forage-popup .leaflet-popup-content-wrapper {
   animation: forage-pop-in 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
   border-radius: 10px;
 }
-.forage-popup .leaflet-popup-content { margin: 10px 12px; }
+.forage-popup .leaflet-popup-content { margin: 8px 10px; }
 @keyframes forage-pop-in {
   0% { transform: scale(0.55); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
-.forage-popup-body { display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
-.forage-popup-name { font-size: 14px; }
-.forage-popup-region { font-size: 12px; }
-.forage-popup-details {
-  margin-top: 6px; align-self: flex-start; border: none; background: none; padding: 0;
-  color: #2a6fdb; font-size: 12px; cursor: pointer; text-decoration: underline;
+.forage-popup-body {
+  display: flex; flex-direction: column; gap: 2px; min-width: 140px; max-height: 220px;
+  overflow-y: auto;
 }
-.forage-popup-details:hover { color: #1a4fa8; }
+.forage-popup-item {
+  display: flex; align-items: center; gap: 8px; border: none; background: none;
+  padding: 4px 2px; border-radius: 6px; cursor: pointer; text-align: left; font: inherit;
+  color: #2a6fdb;
+}
+.forage-popup-item:hover { background: rgba(42, 111, 219, 0.1); }
+.forage-popup-item img {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; object-fit: cover;
+}
+.forage-popup-item span { font-size: 13px; }
 </style>
