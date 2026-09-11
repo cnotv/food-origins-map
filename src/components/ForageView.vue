@@ -20,6 +20,7 @@ import {
   type SavedPoint,
 } from '../composables/savedPoints'
 import { listRecentFoods, pushRecentFood, removeRecentFood } from '../composables/recentFoods'
+import Icon from './Icon.vue'
 
 const props = defineProps<{
   items: ProduceItem[]
@@ -225,13 +226,13 @@ const onChipThumbError = (e: Event) => {
        banner is the only thing that stays up, as a cancelable reminder. -->
   <div v-if="pickMode" class="picking-banner">
     <span>Tap the map to place your point…</span>
-    <button type="button" aria-label="Cancel adding a point" @click="pickMode = false">✕</button>
+    <button type="button" aria-label="Cancel adding a point" @click="pickMode = false"><Icon name="close" /></button>
   </div>
   <aside class="forage-view" :class="{ picking: pickMode }" role="dialog" aria-label="Forage near a location">
     <header class="forage-head">
       <div class="row">
         <h2>Forage now</h2>
-        <button class="close" aria-label="Close" @click="emit('close')">✕</button>
+        <button class="close" aria-label="Close" @click="emit('close')"><Icon name="close" /></button>
       </div>
       <p class="lede">Save spots you can forage, and see what's in season there right now.</p>
       <form class="loc-form" @submit.prevent="geocodeCity">
@@ -274,7 +275,7 @@ const onChipThumbError = (e: Event) => {
             </span>
           </div>
           <button class="remove-point" aria-label="Remove saved point" @click="removePoint(point.id)">
-            ✕
+            <Icon name="close" />
           </button>
         </div>
 
@@ -298,7 +299,7 @@ const onChipThumbError = (e: Event) => {
               aria-label="Remove from last used"
               @click="removeRecent(item.id)"
             >
-              ✕
+              <Icon name="close" />
             </button>
           </span>
           </div>
@@ -367,6 +368,7 @@ const onChipThumbError = (e: Event) => {
 .close {
   border: none; background: var(--surface-2); color: var(--text); border-radius: 50%;
   width: 30px; height: 30px; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
 }
 .lede { margin: 6px 0 10px; font-size: 13px; color: var(--text-muted); }
 .loc-form { display: flex; gap: 8px; }
@@ -420,11 +422,13 @@ const onChipThumbError = (e: Event) => {
 .recent-x {
   flex: none; border: none; border-left: 1px solid var(--border-strong); background: var(--surface-2);
   color: var(--text-faint); width: 22px; font-size: 10px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
 }
 .recent-x:hover { color: var(--warn-text); }
 .remove-point {
   flex: none; border: none; background: none; color: var(--text-faint);
   width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
 }
 .remove-point:hover { color: var(--warn-text); }
 
@@ -479,6 +483,7 @@ const onChipThumbError = (e: Event) => {
   .picking-banner button {
     flex: none; border: none; background: rgba(255, 255, 255, 0.25); color: inherit;
     border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
 }
 </style>

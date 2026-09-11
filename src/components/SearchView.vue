@@ -4,6 +4,7 @@ import type { ProduceItem, Category } from '../data/types'
 import { badgeImagePath } from '../data/validators'
 import FilterChips from './FilterChips.vue'
 import NutritionFilter, { type Nutrient, type Thresholds } from './NutritionFilter.vue'
+import Icon from './Icon.vue'
 
 const props = defineProps<{ items: ProduceItem[]; selectedId: string | null }>()
 const emit = defineEmits<{ select: [item: ProduceItem]; close: [] }>()
@@ -70,7 +71,7 @@ const onThumbError = (e: Event) => {
     <header class="search-head">
       <div class="row">
         <h2>Search foods</h2>
-        <button class="close" aria-label="Close search" @click="emit('close')">✕</button>
+        <button class="close" aria-label="Close search" @click="emit('close')"><Icon name="close" /></button>
       </div>
       <input
         v-model="query"
@@ -132,6 +133,7 @@ const onThumbError = (e: Event) => {
 .close {
   border: none; background: var(--surface-2); color: var(--text); border-radius: 50%;
   width: 30px; height: 30px; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
 }
 .search-input {
   width: 100%; margin: 12px 0; padding: 10px 12px; font-size: 14px;

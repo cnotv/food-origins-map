@@ -70,7 +70,10 @@ src/
 │   ├── SidePanel.vue           # Slide-in detail panel for the selected food
 │   ├── NutritionTable.vue      # Per-100g nutrition + highlights
 │   ├── FilterChips.vue         # Category filter buttons
-│   └── ForageView.vue          # Forage panel: save points, per-point results, map toggles
+│   ├── SearchView.vue          # Search panel: name/region query, category + nutrition filters
+│   ├── NutritionFilter.vue     # Per-nutrient threshold sliders, used by SearchView
+│   ├── ForageView.vue          # Forage panel: save points, per-point results, map toggles
+│   └── Icon.vue                # Small inline SVG icon set (search/filter/leaf/close/map-pin)
 ├── composables/
 │   ├── savedPoints.ts          # localStorage-backed saved-point CRUD (Forage)
 │   └── recentFoods.ts          # localStorage-backed "last used" food MRU list (Forage)
@@ -249,16 +252,27 @@ the visitor straight on its pick list.
 ### Mobile layout: the map is the base layer
 
 Below 640px, `App.vue` drops the header bar entirely (`.topbar { display: none }`) and
-replaces it with a small floating icon cluster (`.mobile-toolbar`: search, filter, forage)
-positioned `position: fixed` over the map, which now fills the *entire* viewport
-(`grid-template-areas: 'map' 'panel'` — only the detail `SidePanel` still claims a row, as
-a bottom sheet). `SearchView`/`ForageView` become capped-height floating cards
-(`position: fixed; max-height: 70vh`) anchored below the toolbar instead of swapping into
-the map's grid area — the map stays visible around and behind them, which is the whole
-point: earlier mobile builds replaced the map with whatever panel was open, so it was
-never visible once you touched Search or Forage. `FilterChips` gets the same
-popover treatment (`.mobile-filter-pop`, toggled by `filterOpen`) rather than sitting
-inline in a header that no longer exists on this breakpoint.
+replaces it with a small floating icon cluster (`.mobile-toolbar`: search, filter, forage
+search, mode toggle) positioned `position: fixed` over the map, which now fills the
+*entire* viewport (`grid-template-areas: 'map' 'panel'` — only the detail `SidePanel`
+still claims a row, as a bottom sheet). `SearchView`/`ForageView` become capped-height
+floating cards (`position: fixed; max-height: 70vh`) anchored below the toolbar instead
+of swapping into the map's grid area — the map stays visible around and behind them,
+which is the whole point: earlier mobile builds replaced the map with whatever panel was
+open, so it was never visible once you touched Search or Forage. `FilterChips` gets the
+same popover treatment (`.mobile-filter-pop`, toggled by `filterOpen`) rather than
+sitting inline in a header that no longer exists on this breakpoint.
+
+The map's marker mode (food origins vs. forage dots) and the Forage panel's visibility are
+two independent controls, both present on desktop and mobile: the pill-shaped
+`.mode-toggle` switch (`forageMode`, a plain boolean) only swaps which marker set
+`WorldMap` renders (`origin-markers-visible="!forageMode"`) and never opens a panel;
+`forageSearchOpen` — flipped by its own "Forage search" button, distinct from the general
+"Search" button — opens/closes `ForageView` the same way `searchOpen` opens/closes
+`SearchView`. A watcher (`watch(forageSearchOpen, ...)`) flips `forageMode` on when the
+Forage panel opens, so saving a point immediately shows forage dots, but the toggle can
+still be flipped back to origins independently while the panel stays open, and flipping it
+never closes or opens either panel.
 
 One added wrinkle: while "tap the map to add a point" is armed, `ForageView` hides itself
 entirely (`.forage-view.picking { display: none }`) rather than leaving only the sliver of

@@ -5,6 +5,7 @@ import SidePanel from './components/SidePanel.vue'
 import SearchView from './components/SearchView.vue'
 import ForageView from './components/ForageView.vue'
 import FilterChips from './components/FilterChips.vue'
+import Icon from './components/Icon.vue'
 import { produce } from './data/produce'
 import { CATEGORIES } from './data/types'
 import type { ProduceItem, Category } from './data/types'
@@ -12,13 +13,23 @@ import type { ProduceItem, Category } from './data/types'
 const selected = ref<ProduceItem | null>(null)
 const activeFilter = ref<Category | 'all'>('all')
 const searchOpen = ref(false)
-const forageOpen = ref(false)
+// The forage *search* panel (city search, use-my-location, tap-to-add, the
+// saved-points list) — a dropdown like SearchView's, opened by its own
+// button. Distinct from forageMode below: opening this panel is not what
+// puts the map into forage mode, though it does so as a convenience (see the
+// watcher further down) — you can also just flip the mode toggle on its own,
+// with no panel involved.
+const forageSearchOpen = ref(false)
+// The map's marker mode: false = normal per-food origin markers, true =
+// forage dots for saved points. A plain toggle switch, independent of any
+// panel — flipping it never opens a dropdown.
+const forageMode = ref(false)
 // Mobile only: the compact filter popover under the toolbar's filter icon
 // (desktop shows FilterChips inline in the topbar instead — see template).
 const filterOpen = ref(false)
 const mapFocus = ref<{ lat: number; lng: number } | null>(null)
 // Foraging's saved-point markers, relayed up from ForageView to replace the
-// normal origin markers on WorldMap while Forage is open.
+// normal origin markers on WorldMap while forageMode is on.
 const forageMarkers = ref<MarkerEntry[]>([])
 // A click on the map, relayed down to ForageView so it can drop a point
 // there while its own "tap the map" pick mode is armed. A fresh object each
@@ -44,10 +55,12 @@ const SLUG_TABS = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [
 >
 const detailTab = ref<Tab>('About')
 
-// Search and Forage share the same slot, so only one is open at a time.
+// Search, forage-search and the filter popover share the same dropdown slot,
+// so only one is open at a time. forageMode is not an overlay — it's a
+// standing display mode — so it's untouched here.
 function closeOverlays() {
   searchOpen.value = false
-  forageOpen.value = false
+  forageSearchOpen.value = false
   filterOpen.value = false
 }
 function toggleSearch() {
@@ -55,10 +68,10 @@ function toggleSearch() {
   closeOverlays()
   searchOpen.value = next
 }
-function toggleForage() {
-  const next = !forageOpen.value
+function toggleForageSearch() {
+  const next = !forageSearchOpen.value
   closeOverlays()
-  forageOpen.value = next
+  forageSearchOpen.value = next
 }
 function toggleFilter() {
   const next = !filterOpen.value
@@ -69,6 +82,13 @@ function onMobileFilterChange(value: Category | 'all') {
   activeFilter.value = value
   filterOpen.value = false
 }
+
+// Opening the forage-search panel is a convenient way into forage mode, but
+// the mode toggle stays independently flippable — closing the panel doesn't
+// turn it back off.
+watch(forageSearchOpen, (open) => {
+  if (open) forageMode.value = true
+})
 
 const filteredItems = computed(() =>
   activeFilter.value === 'all' ? produce : produce.filter((p) => p.category === activeFilter.value),
@@ -87,7 +107,7 @@ const onSearchSelect = (item: ProduceItem) => {
 function buildQueryString(): string {
   const p = new URLSearchParams()
   if (searchOpen.value) p.set('view', 'search')
-  else if (forageOpen.value) p.set('view', 'forage')
+  else if (forageSearchOpen.value) p.set('view', 'forage')
   if (activeFilter.value !== 'all') p.set('filter', activeFilter.value)
   if (selected.value) {
     p.set('item', selected.value.id)
@@ -100,7 +120,7 @@ function applyUrl() {
   const p = new URLSearchParams(location.search)
   const view = p.get('view')
   searchOpen.value = view === 'search'
-  forageOpen.value = view === 'forage'
+  forageSearchOpen.value = view === 'forage'
   const filter = p.get('filter') as Category | null
   activeFilter.value = filter && CATEGORIES.includes(filter) ? filter : 'all'
   const id = p.get('item')
@@ -111,7 +131,7 @@ function applyUrl() {
 
 let syncing = false
 watch(
-  [searchOpen, forageOpen, activeFilter, selected, detailTab],
+  [searchOpen, forageSearchOpen, activeFilter, selected, detailTab],
   () => {
     if (syncing) return
     const qs = buildQueryString()
@@ -151,7 +171,7 @@ const onKey = (e: KeyboardEvent) => {
   // Close the topmost overlay first: detail panel, then search/forage/filter.
   if (selected.value) selected.value = null
   else if (searchOpen.value) searchOpen.value = false
-  else if (forageOpen.value) forageOpen.value = false
+  else if (forageSearchOpen.value) forageSearchOpen.value = false
   else if (filterOpen.value) filterOpen.value = false
 }
 onMounted(() => {
@@ -171,12 +191,25 @@ onBeforeUnmount(() => {
       <h1>Food Origins Map</h1>
       <FilterChips :active="activeFilter" @change="activeFilter = $event" />
       <button
-        class="forage-toggle"
-        :class="{ active: forageOpen }"
-        :aria-pressed="forageOpen"
-        @click="toggleForage"
+        type="button"
+        class="mode-toggle"
+        role="switch"
+        :aria-checked="forageMode"
+        aria-label="Show forage points on the map instead of food origins"
+        :class="{ on: forageMode }"
+        @click="forageMode = !forageMode"
       >
-        Forage
+        <Icon name="map-pin" class="toggle-icon off-icon" />
+        <span class="toggle-knob"></span>
+        <Icon name="leaf" class="toggle-icon on-icon" />
+      </button>
+      <button
+        class="forage-toggle"
+        :class="{ active: forageSearchOpen }"
+        :aria-pressed="forageSearchOpen"
+        @click="toggleForageSearch"
+      >
+        <Icon name="leaf" /> Forage search
       </button>
       <button
         class="search-toggle"
@@ -184,7 +217,7 @@ onBeforeUnmount(() => {
         :aria-pressed="searchOpen"
         @click="toggleSearch"
       >
-        Search
+        <Icon name="search" /> Search
       </button>
       <a class="bug-link" :href="bugReportUrl" target="_blank" rel="noopener">bugs?</a>
     </header>
@@ -199,7 +232,7 @@ onBeforeUnmount(() => {
         aria-label="Search foods"
         @click="toggleSearch"
       >
-        🔍
+        <Icon name="search" />
       </button>
       <button
         class="mt-btn"
@@ -208,16 +241,29 @@ onBeforeUnmount(() => {
         aria-label="Filter by type"
         @click="toggleFilter"
       >
-        ▤
+        <Icon name="filter" />
       </button>
       <button
         class="mt-btn"
-        :class="{ active: forageOpen }"
-        :aria-pressed="forageOpen"
-        aria-label="Forage"
-        @click="toggleForage"
+        :class="{ active: forageSearchOpen }"
+        :aria-pressed="forageSearchOpen"
+        aria-label="Search foraging spots"
+        @click="toggleForageSearch"
       >
-        🌿
+        <Icon name="leaf" />
+      </button>
+      <button
+        type="button"
+        class="mode-toggle"
+        role="switch"
+        :aria-checked="forageMode"
+        aria-label="Show forage points on the map instead of food origins"
+        :class="{ on: forageMode }"
+        @click="forageMode = !forageMode"
+      >
+        <Icon name="map-pin" class="toggle-icon off-icon" />
+        <span class="toggle-knob"></span>
+        <Icon name="leaf" class="toggle-icon on-icon" />
       </button>
     </div>
     <div v-if="filterOpen" class="mobile-filter-pop">
@@ -228,7 +274,7 @@ onBeforeUnmount(() => {
       :items="filteredItems"
       :selected-id="selected?.id ?? null"
       :focus="mapFocus"
-      :origin-markers-visible="!forageOpen"
+      :origin-markers-visible="!forageMode"
       :forage-markers="forageMarkers"
       @select="selected = $event"
       @map-click="onMapClick"
@@ -241,12 +287,12 @@ onBeforeUnmount(() => {
       @close="searchOpen = false"
     />
     <ForageView
-      v-if="forageOpen"
+      v-if="forageSearchOpen"
       :items="produce"
       :selected-id="selected?.id ?? null"
       :map-click="mapClickSignal"
       @select="onSearchSelect"
-      @close="forageOpen = false"
+      @close="forageSearchOpen = false"
       @focus="mapFocus = $event"
       @markers="forageMarkers = $event"
     />
@@ -285,16 +331,36 @@ onBeforeUnmount(() => {
 }
 .topbar h1 { font-size: 18px; margin: 0; white-space: nowrap; }
 .search-toggle, .forage-toggle {
+  display: flex; align-items: center; gap: 6px;
   border: 1px solid var(--border-strong); background: var(--surface);
   color: var(--text); border-radius: 16px; padding: 6px 14px; font-size: 13px;
   cursor: pointer; white-space: nowrap;
 }
-.forage-toggle { margin-left: auto; }
+.mode-toggle { margin-left: auto; }
 .search-toggle.active, .forage-toggle.active {
   background: var(--accent); color: var(--on-accent); border-color: var(--accent);
 }
 .bug-link { flex: none; font-size: 13px; color: var(--text-muted); }
 .bug-link:hover { color: var(--text); }
+
+/* The map/forage mode switch: a plain two-position toggle, not a button that
+   opens anything — flipping it only ever changes which markers WorldMap
+   shows (see origin-markers-visible on <WorldMap>). */
+.mode-toggle {
+  position: relative; flex: none; display: flex; align-items: center; justify-content: space-between;
+  width: 56px; height: 30px; padding: 0 6px; border-radius: 15px;
+  border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer;
+}
+.mode-toggle .toggle-icon {
+  position: relative; z-index: 1; font-size: 13px; color: var(--text-faint);
+}
+.mode-toggle:not(.on) .off-icon { color: var(--text); }
+.mode-toggle.on .on-icon { color: var(--on-accent); }
+.toggle-knob {
+  position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--border-strong); transition: transform 150ms ease, background 150ms ease;
+}
+.mode-toggle.on .toggle-knob { transform: translateX(26px); background: var(--accent); }
 
 /* Mobile toolbar + filter popover: hidden on desktop, where the topbar above
    already carries these controls inline. */
@@ -314,7 +380,7 @@ onBeforeUnmount(() => {
   .topbar { display: none; }
 
   .mobile-toolbar {
-    display: flex; gap: 8px;
+    display: flex; align-items: center; gap: 8px;
     position: fixed; top: 12px; right: 12px; z-index: 600;
   }
   .mt-btn {
@@ -326,6 +392,12 @@ onBeforeUnmount(() => {
   .mt-btn.active {
     background: var(--accent); color: var(--on-accent); border-color: var(--accent);
   }
+  .mobile-toolbar .mode-toggle {
+    width: 60px; height: 34px; box-shadow: 0 2px 8px var(--shadow);
+  }
+  .mobile-toolbar .mode-toggle .toggle-icon { font-size: 15px; }
+  .mobile-toolbar .mode-toggle .toggle-knob { width: 26px; height: 26px; }
+  .mobile-toolbar .mode-toggle.on .toggle-knob { transform: translateX(26px); }
   .mobile-filter-pop {
     display: block;
     position: fixed; top: 60px; right: 12px; z-index: 600;
