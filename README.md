@@ -24,7 +24,7 @@ supports zoom, pan, marker clustering, and filtering by category.
 - **sharp** for the image build-prep pipeline
 
 The app is fully static — no backend. The only network dependency at runtime is
-the CARTO basemap tiles.
+the CARTO basemap tiles, plus the Forage panel's geocoding calls.
 
 ## Getting started
 
