@@ -216,17 +216,34 @@ Renders a chip per category (plus "All"), highlights the active one, and emits
 ### ForageView.vue — saved points
 
 Foraging is built around **saved points**, not the single current-location search of
-earlier versions: a point is added by searching a city, using "Use my location", or
-arming "Add a point by tapping the map" and clicking `WorldMap` (relayed up through
-`App.vue` as a `mapClick` signal, back down to `ForageView` as a prop — see
-`composables/savedPoints.ts` for the `localStorage` CRUD). Each point gets its own
-foragable-now results (`data/season.ts`'s `foragableNow`), filterable by category. A point
-starts with **nothing shown on the map** — a spot can be foragable for dozens of things at
-once, so each food's marker is opt-in via a checkbox per result (`visibleFoodIds` on the
-point) rather than dumping every in-season result on by default.
+earlier versions: a point is added by searching a city, or by arming "Add a point by
+tapping the map" and clicking `WorldMap` (relayed up through `App.vue` as a `mapClick`
+signal, back down to `ForageView` as a prop — see `composables/savedPoints.ts` for the
+`localStorage` CRUD). "Use my location" is deliberately **not** one of these — it only
+centers/zooms the map on the visitor's position (the same `focus` emit described below)
+so they can look around before deciding where to actually drop a point; it never saves
+one.
 
-While Forage is open, `WorldMap` swaps its normal per-food origin markers for these
-per-point results instead (`origin-markers-visible="false"` + a `forage-markers` prop of
+Saved points are **never rendered as a list** — the only place they show up is as dots on
+the map. Creating one (tap or city search) immediately centers/zooms the map on it
+(`emit('focus', …)`, picked up by `WorldMap`'s `focus` prop) and opens a **food-picker
+dialog** (`.food-dialog-backdrop` / `.food-dialog`, a modal over the map) for that one
+point: a free-text search (`foodQuery`, matched against name/region — the "autocomplete"
+for finding a food without scrolling) narrows its foragable-now results
+(`data/season.ts`'s `foragableNow`), further filterable by category, each with a checkbox
+opt-in (`visibleFoodIds` on the point) — a point starts with **nothing shown on the map**,
+since a spot can be foragable for dozens of things at once. On small screens
+(`isMobile`, tracked live via `matchMedia('(max-width: 640px)')`) the results list is
+capped to 3 matches at a time, with a "N more — search to narrow it down" hint, rather
+than a long scroll. Closing the dialog (`✕` or the backdrop) keeps the point if at least
+one food was picked; if none was, the point is discarded outright — there's no list to
+leave an orphaned empty entry sitting in. Re-picking foods for an existing spot later
+means defining it again (tap/search it a second time) rather than editing a saved record:
+same-coordinate points merge into one dot on the map regardless (see below), so this
+costs nothing visually.
+
+While Forage is open, `WorldMap` swaps its normal per-food origin markers for the saved
+points' results instead (`origin-markers-visible="false"` + a `forage-markers` prop of
 `MarkerEntry[]`, exported from `WorldMap.vue`): a food now renders at the saved point's
 coordinates rather than its domestication origin, since that's what's actually relevant to
 foraging there. Closing Forage restores the origin markers.
@@ -241,13 +258,11 @@ opens a popup (`buildForagePopup`, a real `HTMLElement` so each row can hold a w
 listener) listing every picked food at that point as an image + name, each a link through to
 the full `SidePanel`.
 
-Every point card also carries a **"last used" shortcut row** (`composables/recentFoods.ts`,
+The food-picker dialog also carries a **"last used" shortcut row** (`composables/recentFoods.ts`,
 a small global `localStorage` MRU list, most-recent first) pinned above its own filtered
 results — picking a food anywhere pushes it there, so re-picking a favorite at a new point
-doesn't mean re-filtering the whole list. Each shortcut has its own ✕ to drop it from the
-list without touching any point's actual selection. A newly created point scrolls itself
-into view (`pointEls` + `scrollIntoView`) so defining one — city, location, or tap — lands
-the visitor straight on its pick list.
+doesn't mean re-searching from scratch. Each shortcut has its own ✕ to drop it from the
+list without touching any point's actual selection.
 
 ### Mobile layout: the map is the base layer
 
