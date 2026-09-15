@@ -25,6 +25,9 @@ export interface MarkerEntry {
   lat: number
   lng: number
   item: ProduceItem
+  // Forage entries only: the SavedPoint this came from, so the map popup's
+  // Edit/Delete buttons know which point(s) to act on.
+  pointId?: string
 }
 
 // A single badge: the produce image with a lettered fallback if it 404s.
@@ -72,6 +75,14 @@ export function buildClusterHtml(items: ProduceItem[]): string {
   }
   return `<div class="cluster-solid">${label}</div>`
 }
+
+// Small inline icons for the forage popup's Edit/Delete row — raw markup
+// (not the Icon.vue component) since the popup is built as plain DOM, not
+// inside Vue's render tree.
+const EDIT_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>'
+const TRASH_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
 </script>
 
 <script setup lang="ts">
@@ -97,6 +108,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [item: ProduceItem]
   mapClick: [point: { lat: number; lng: number }]
+  // From a forage dot's popup: Edit opens the food-picker for that point
+  // (App.vue relays it back down to ForageView), Delete removes every
+  // SavedPoint sharing that dot's exact coordinates.
+  editForagePoint: [pointId: string]
+  deleteForagePoint: [pointIds: string[]]
 }>()
 
 // Deepest zoom; clustering is switched off here so all markers explode apart.
@@ -152,11 +168,14 @@ function spreadPositions(entries: MarkerEntry[]): Map<string, [number, number]> 
 // The popup a forage dot opens on click: every food picked at that exact
 // point, each just an image + name, since the dot itself already told the
 // visitor "something's here" — the popup's job is only to say what, with a
-// click through to the full side panel for whichever one they want.
-function buildForagePopup(items: ProduceItem[]): HTMLElement {
+// click through to the full side panel for whichever one they want. Below
+// that, Edit reopens the food-picker for the point (closing the popup first);
+// Delete removes it after a confirm, since it's otherwise a one-tap, no-undo
+// action on a small map target.
+function buildForagePopup(items: ProduceItem[], pointIds: string[], closePopup: () => void): HTMLElement {
   const el = document.createElement('div')
   el.className = 'forage-popup-body'
-  el.innerHTML = items
+  const itemsHtml = items
     .map(
       (item) => `
         <button type="button" class="forage-popup-item">
@@ -165,15 +184,33 @@ function buildForagePopup(items: ProduceItem[]): HTMLElement {
         </button>`,
     )
     .join('')
+  el.innerHTML = `
+    <div class="forage-popup-items">${itemsHtml}</div>
+    <div class="forage-popup-actions">
+      <button type="button" class="forage-popup-action edit">${EDIT_ICON}<span>Edit</span></button>
+      <button type="button" class="forage-popup-action delete">${TRASH_ICON}<span>Delete</span></button>
+    </div>`
   el.querySelectorAll<HTMLButtonElement>('.forage-popup-item').forEach((btn, i) => {
     btn.addEventListener('click', () => emit('select', items[i]))
+  })
+  el.querySelector('.forage-popup-action.edit')?.addEventListener('click', () => {
+    closePopup()
+    if (pointIds[0]) emit('editForagePoint', pointIds[0])
+  })
+  el.querySelector('.forage-popup-action.delete')?.addEventListener('click', () => {
+    if (window.confirm('Remove this saved point and everything picked there?')) {
+      emit('deleteForagePoint', pointIds)
+    }
   })
   return el
 }
 
 // One dot per saved point, however many foods were picked there — grouping
 // by the exact coordinates means there's never more than one marker sitting
-// on a given spot, however many foods it opens a popup onto.
+// on a given spot, however many foods it opens a popup onto. Points sharing
+// that exact spot (rare — two separate saves landing on the same coordinate)
+// share the dot's Edit/Delete too: Edit targets the first of them, Delete
+// removes all of them, since there's nothing visually distinguishing them.
 function renderForageDots(entries: MarkerEntry[]) {
   if (!map || !forageDots) return
   forageDots.clearLayers()
@@ -186,6 +223,7 @@ function renderForageDots(entries: MarkerEntry[]) {
   }
   for (const group of groups.values()) {
     const items = group.map((e) => e.item)
+    const pointIds = [...new Set(group.map((e) => e.pointId).filter((id): id is string => !!id))]
     const icon = L.divIcon({
       html: buildDotHtml(categoryColor(items[0].category), items.length),
       className: 'forage-dot-wrap',
@@ -193,7 +231,9 @@ function renderForageDots(entries: MarkerEntry[]) {
       iconAnchor: [DOT_BOX / 2, DOT_BOX / 2],
     })
     const marker = L.marker([group[0].lat, group[0].lng], { icon })
-    marker.bindPopup(buildForagePopup(items), { className: 'forage-popup' })
+    marker.bindPopup(buildForagePopup(items, pointIds, () => marker.closePopup()), {
+      className: 'forage-popup',
+    })
     forageDots.addLayer(marker)
   }
 }
@@ -399,10 +439,8 @@ onBeforeUnmount(() => {
   0% { transform: scale(0.55); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
-.forage-popup-body {
-  display: flex; flex-direction: column; gap: 2px; min-width: 140px; max-height: 220px;
-  overflow-y: auto;
-}
+.forage-popup-body { display: flex; flex-direction: column; min-width: 150px; max-width: 220px; }
+.forage-popup-items { display: flex; flex-direction: column; gap: 2px; max-height: 200px; overflow-y: auto; }
 .forage-popup-item {
   display: flex; align-items: center; gap: 8px; border: none; background: none;
   padding: 4px 2px; border-radius: 6px; cursor: pointer; text-align: left; font: inherit;
@@ -413,4 +451,15 @@ onBeforeUnmount(() => {
   flex: none; width: 28px; height: 28px; border-radius: 50%; object-fit: cover;
 }
 .forage-popup-item span { font-size: 13px; }
+.forage-popup-actions {
+  display: flex; gap: 4px; margin-top: 4px; padding-top: 4px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+.forage-popup-action {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+  border: none; background: none; padding: 6px 4px; border-radius: 6px; cursor: pointer;
+  font: inherit; font-size: 12px; color: #444;
+}
+.forage-popup-action:hover { background: rgba(0, 0, 0, 0.06); }
+.forage-popup-action.delete { color: #c0392b; }
 </style>

@@ -9,16 +9,17 @@ import Icon from './components/Icon.vue'
 import { produce } from './data/produce'
 import { CATEGORIES } from './data/types'
 import type { ProduceItem, Category } from './data/types'
+import { listSavedPoints, removeSavedPoint, type SavedPoint } from './composables/savedPoints'
 
 const selected = ref<ProduceItem | null>(null)
 const activeFilter = ref<Category | 'all'>('all')
 const searchOpen = ref(false)
-// The forage *search* panel (city search, use-my-location, tap-to-add, the
-// saved-points list) — a dropdown like SearchView's, opened by its own
-// button. Distinct from forageMode below: opening this panel is not what
-// puts the map into forage mode, though it does so as a convenience (see the
-// watcher further down) — you can also just flip the mode toggle on its own,
-// with no panel involved.
+// The forage *search* panel (city search, use-my-location, tap-to-add, and
+// the inline food picker for whichever point is active) — a dropdown like
+// SearchView's, opened by its own button. Distinct from forageMode below:
+// opening this panel is not what puts the map into forage mode, though it
+// does so as a convenience (see the watcher further down) — you can also
+// just flip the mode toggle on its own, with no panel involved.
 const forageSearchOpen = ref(false)
 // The map's marker mode: false = normal per-food origin markers, true =
 // forage dots for saved points. A plain toggle switch, independent of any
@@ -28,9 +29,26 @@ const forageMode = ref(false)
 // (desktop shows FilterChips inline in the topbar instead — see template).
 const filterOpen = ref(false)
 const mapFocus = ref<{ lat: number; lng: number } | null>(null)
-// Foraging's saved-point markers, relayed up from ForageView to replace the
-// normal origin markers on WorldMap while forageMode is on.
-const forageMarkers = ref<MarkerEntry[]>([])
+// Saved points live here, not inside ForageView, so they (and the dots they
+// produce below) stay correct even while ForageView is unmounted — forageMode
+// can be on with the panel closed, and the map popup's Edit/Delete can change
+// them without the panel open at all.
+const points = ref<SavedPoint[]>(listSavedPoints())
+function refreshPoints() {
+  points.value = listSavedPoints()
+}
+// Every picked food across every saved point, positioned at that point — the
+// markers WorldMap draws as forage dots while forageMode is on. Independent
+// of any category filter: a food the visitor picked shouldn't vanish off the
+// map just because they later narrowed the food-picker's own search.
+const forageMarkers = computed<MarkerEntry[]>(() =>
+  points.value.flatMap((point) =>
+    point.visibleFoodIds
+      .map((id) => produce.find((it) => it.id === id))
+      .filter((it): it is ProduceItem => !!it)
+      .map((item) => ({ id: `${point.id}:${item.id}`, lat: point.lat, lng: point.lng, item, pointId: point.id })),
+  ),
+)
 // A click on the map, relayed down to ForageView so it can drop a point
 // there while its own "tap the map" pick mode is armed. A fresh object each
 // time (via the nonce) so the watcher fires even for two clicks at one spot.
@@ -39,6 +57,22 @@ let mapClickNonce = 0
 function onMapClick(point: { lat: number; lng: number }) {
   mapClickNonce++
   mapClickSignal.value = { ...point, nonce: mapClickNonce }
+}
+// "Edit" on a forage dot's popup: make sure the panel is open, then tell
+// ForageView which point to open its food-picker for (nonce so re-clicking
+// the same point's Edit still re-fires the watcher).
+const editPointSignal = ref<{ id: string; nonce: number } | null>(null)
+let editPointNonce = 0
+function onEditForagePoint(id: string) {
+  forageSearchOpen.value = true
+  editPointNonce++
+  editPointSignal.value = { id, nonce: editPointNonce }
+}
+// "Delete" on a forage dot's popup: works whether or not the panel is open,
+// since it only touches the composable + this component's own points ref.
+function onDeleteForagePoint(ids: string[]) {
+  for (const id of ids) removeSavedPoint(id)
+  refreshPoints()
 }
 
 // Detail-panel tab, kept here so it can be reflected in the URL.
@@ -278,6 +312,8 @@ onBeforeUnmount(() => {
       :forage-markers="forageMarkers"
       @select="selected = $event"
       @map-click="onMapClick"
+      @edit-forage-point="onEditForagePoint"
+      @delete-forage-point="onDeleteForagePoint"
     />
     <SearchView
       v-if="searchOpen"
@@ -291,10 +327,11 @@ onBeforeUnmount(() => {
       :items="produce"
       :selected-id="selected?.id ?? null"
       :map-click="mapClickSignal"
+      :edit-point="editPointSignal"
       @select="onSearchSelect"
       @close="forageSearchOpen = false"
       @focus="mapFocus = $event"
-      @markers="forageMarkers = $event"
+      @points-changed="refreshPoints"
     />
     <SidePanel
       :item="selected"

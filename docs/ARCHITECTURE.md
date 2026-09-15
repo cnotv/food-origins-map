@@ -213,7 +213,7 @@ driven entirely by props.
 Renders a chip per category (plus "All"), highlights the active one, and emits
 `change`. `App.vue` maps this to `activeFilter` and recomputes `filteredItems`.
 
-### ForageView.vue — saved points
+### ForageView.vue + App.vue — saved points
 
 Foraging is built around **saved points**, not the single current-location search of
 earlier versions: a point is added by searching a city, or by arming "Add a point by
@@ -224,23 +224,42 @@ centers/zooms the map on the visitor's position (the same `focus` emit described
 so they can look around before deciding where to actually drop a point; it never saves
 one.
 
+**`App.vue` owns the canonical `points` ref** (`SavedPoint[]`, read via `listSavedPoints()`),
+not `ForageView` — because forage dots have to stay correct on the map even while
+`ForageView` is unmounted (`forageMode` can be on with the panel closed) or while a point is
+deleted from a map popup with the panel never having been open at all. `App.vue` computes
+`forageMarkers` straight from `points` (one `MarkerEntry` per point × picked food, looked up
+directly in `produce` by id) and passes it down to `WorldMap` as the `forage-markers` prop;
+`ForageView` keeps its own local copy of `points` only to drive whichever point's food picker
+is currently open, and tells `App.vue` to refresh its copy via a `pointsChanged` emit after
+every mutation (add/toggle/discard). Note `forageMarkers` is deliberately **not** gated by
+the food-picker's own category filter — a food the visitor picked shouldn't vanish off the
+map just because they later narrowed their search for something else.
+
 Saved points are **never rendered as a list** — the only place they show up is as dots on
 the map. Creating one (tap or city search) immediately centers/zooms the map on it
-(`emit('focus', …)`, picked up by `WorldMap`'s `focus` prop) and opens a **food-picker
-dialog** (`.food-dialog-backdrop` / `.food-dialog`, a modal over the map) for that one
-point: a free-text search (`foodQuery`, matched against name/region — the "autocomplete"
-for finding a food without scrolling) narrows its foragable-now results
-(`data/season.ts`'s `foragableNow`), further filterable by category, each with a checkbox
-opt-in (`visibleFoodIds` on the point) — a point starts with **nothing shown on the map**,
-since a spot can be foragable for dozens of things at once. On small screens
+(`emit('focus', …)`, picked up by `WorldMap`'s `focus` prop) and opens a **food picker
+inline**, right in the `.forage-view` panel below the city-search/use-location controls
+(not a modal — it was one briefly, but got hard to notice, so it was folded back into the
+panel itself) for that one point: a free-text search (`foodQuery`, matched against
+name/region — the "autocomplete" for finding a food without scrolling) narrows its
+foragable-now results (`data/season.ts`'s `foragableNow`), further filterable by a `<select>`
+type dropdown (not `FilterChips` — a chip row was too wide for the space here), each with a
+checkbox opt-in (`visibleFoodIds` on the point) — a point starts with **nothing shown on the
+map**, since a spot can be foragable for dozens of things at once. On small screens
 (`isMobile`, tracked live via `matchMedia('(max-width: 640px)')`) the results list is
 capped to 3 matches at a time, with a "N more — search to narrow it down" hint, rather
-than a long scroll. Closing the dialog (`✕` or the backdrop) keeps the point if at least
-one food was picked; if none was, the point is discarded outright — there's no list to
-leave an orphaned empty entry sitting in. Re-picking foods for an existing spot later
-means defining it again (tap/search it a second time) rather than editing a saved record:
-same-coordinate points merge into one dot on the map regardless (see below), so this
-costs nothing visually.
+than a long scroll. Closing the picker (its own `✕`) keeps the point if at least one food
+was picked; if none was, the point is discarded outright — there's no list to leave an
+orphaned empty entry sitting in.
+
+Re-picking foods for an existing point later doesn't mean re-tapping the same spot (which
+would just create a second, separate point there) — **clicking its dot's popup on the map
+offers Edit and Delete** (see below), and Edit is what reopens that exact point's food
+picker: `App.vue`'s `onEditForagePoint(id)` opens the panel if it wasn't already
+(`forageSearchOpen = true`) and sends the point id down as an `editPoint` prop (the same
+nonce-signal pattern as `mapClick`, so re-clicking Edit on the same point re-opens it even if
+the picker never closed), which `ForageView` watches and points `activePointId` at.
 
 While Forage is open, `WorldMap` swaps its normal per-food origin markers for the saved
 points' results instead (`origin-markers-visible="false"` + a `forage-markers` prop of
@@ -255,10 +274,17 @@ Forage markers render differently from origin markers too: a small colored dot
 there (`renderForageDots` groups entries by exact lat/lng before drawing), colored by the
 first food's category with a small count badge when there's more than one. Clicking the dot
 opens a popup (`buildForagePopup`, a real `HTMLElement` so each row can hold a working click
-listener) listing every picked food at that point as an image + name, each a link through to
-the full `SidePanel`.
+listener) listing every picked food at that point as an image + name (each a link through to
+the full `SidePanel`), followed by an **Edit / Delete row**: Edit emits `editForagePoint`
+with the point id (see above); Delete asks for confirmation (`window.confirm` — a one-tap,
+no-undo action on a small map target otherwise) then emits `deleteForagePoint` with every
+point id sharing that dot's coordinates, which `App.vue` removes via `removeSavedPoint` and
+a `refreshPoints()` call — working whether or not `ForageView` is even mounted, since it
+only touches `App.vue`'s own state and the composable. `MarkerEntry.pointId` is what makes
+this possible: an optional field, set only on forage entries, carrying the `SavedPoint.id`
+each entry came from through to the popup builder.
 
-The food-picker dialog also carries a **"last used" shortcut row** (`composables/recentFoods.ts`,
+The food picker also carries a **"last used" shortcut row** (`composables/recentFoods.ts`,
 a small global `localStorage` MRU list, most-recent first) pinned above its own filtered
 results — picking a food anywhere pushes it there, so re-picking a favorite at a new point
 doesn't mean re-searching from scratch. Each shortcut has its own ✕ to drop it from the

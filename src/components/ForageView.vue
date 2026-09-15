@@ -2,8 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { ProduceItem, Category } from '../data/types'
 import { badgeImagePath } from '../data/validators'
-import { categoryColor, type MarkerEntry } from './WorldMap.vue'
-import FilterChips from './FilterChips.vue'
+import { categoryColor } from './WorldMap.vue'
 import {
   foragableNow,
   currentSeasonForLat,
@@ -29,12 +28,20 @@ const props = defineProps<{
   // fresh object on every click (App.vue) is what makes the watcher below
   // fire even for two clicks at the same spot.
   mapClick: { lat: number; lng: number; nonce: number } | null
+  // Set by App.vue when "Edit" is clicked on a forage dot's popup on the map
+  // (which may happen whether or not this panel was already open) — opens
+  // the food-picker for that point. A fresh object each time (nonce) so
+  // re-clicking Edit on the same point re-opens it even if it never closed.
+  editPoint: { id: string; nonce: number } | null
 }>()
 const emit = defineEmits<{
   select: [item: ProduceItem]
   close: []
   focus: [point: { lat: number; lng: number }]
-  markers: [entries: MarkerEntry[]]
+  // Tells App.vue to re-read saved points from localStorage — it owns the
+  // canonical copy (see App.vue) so the map's dots stay correct even after
+  // this panel closes.
+  pointsChanged: []
 }>()
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -43,6 +50,13 @@ const CATEGORY_LABEL: Record<string, string> = {
   legume: 'Legume',
   'herb-spice': 'Herb / Spice',
 }
+const TYPE_OPTIONS: { value: Category | 'all'; label: string }[] = [
+  { value: 'all', label: 'All types' },
+  { value: 'fruit', label: 'Fruits' },
+  { value: 'vegetable', label: 'Vegetables' },
+  { value: 'legume', label: 'Legumes' },
+  { value: 'herb-spice', label: 'Herbs & spices' },
+]
 const SEASON_LABEL: Record<Season, string> = {
   spring: 'Spring',
   summer: 'Summer',
@@ -57,16 +71,17 @@ const error = ref('')
 // Arms map-click picking: the next click relayed from WorldMap adds a point.
 const pickMode = ref(false)
 
-// Saved points are never listed in the UI — they only ever show up as dots on
-// the map (`mapMarkers` below) — but this component still needs to know them
-// to compute those dots and to drive the food-picker dialog.
+// Saved points are never listed in the UI as their own cards — they only
+// ever show up as dots on the map (computed in App.vue, which owns the
+// canonical copy) — but this component still needs its own copy to drive the
+// currently open food-picker.
 const points = ref<SavedPoint[]>(listSavedPoints())
 
-// The point just created (by tap or city search) whose food-picker dialog is
-// open. There's no way back to it once closed — saved points live only on
-// the map, not in a list to revisit — so re-picking foods for a spot means
-// defining it again (tap/search it a second time; same-location points merge
-// into one dot on the map regardless).
+// The point whose food-picker is open (freshly created by tap/city search,
+// or opened via "Edit" on a map popup). There's no way back to a point once
+// this closes with nothing picked — re-picking for an existing spot means
+// defining it again (tap/search it, or Edit its dot) rather than editing a
+// standing list entry.
 const activePointId = ref<string | null>(null)
 const activePoint = computed(() => points.value.find((p) => p.id === activePointId.value) ?? null)
 const foodQuery = ref('')
@@ -90,10 +105,12 @@ onUnmounted(() => {
 function addPoint(label: string, lat: number, lng: number) {
   const point = addSavedPoint(label, lat, lng)
   points.value = listSavedPoints()
+  emit('pointsChanged')
   // Centers/zooms the map on the new point instead of leaving the visitor to
   // pan or scroll to find it.
   emit('focus', { lat, lng })
   foodQuery.value = ''
+  category.value = 'all'
   activePointId.value = point.id
 }
 
@@ -106,20 +123,35 @@ watch(
   },
 )
 
-// Closing the dialog without picking anything discards the point — nothing
+watch(
+  () => props.editPoint,
+  (sig) => {
+    if (!sig) return
+    // Points may have changed since this component last read them (e.g. a
+    // delete from a different dot's popup) — refresh before editing.
+    points.value = listSavedPoints()
+    if (!points.value.some((p) => p.id === sig.id)) return
+    foodQuery.value = ''
+    category.value = 'all'
+    activePointId.value = sig.id
+  },
+)
+
+// Closing the picker without picking anything discards the point — nothing
 // worth keeping (or showing on the map) came of it, and there's no list to
 // leave an empty entry sitting in.
-function closeDialog() {
+function closePicker() {
   const point = activePoint.value
   activePointId.value = null
   if (point && point.visibleFoodIds.length === 0) {
     removeSavedPoint(point.id)
     points.value = points.value.filter((p) => p.id !== point.id)
+    emit('pointsChanged')
   }
 }
 
 // A global "last used" shortlist (across all points), pinned above the
-// dialog's own filtered results so re-picking a favorite at a new point
+// picker's own filtered results so re-picking a favorite at a new point
 // doesn't mean re-searching from scratch.
 const recentIds = ref<string[]>(listRecentFoods())
 const recentItems = computed(() =>
@@ -133,6 +165,7 @@ function toggleFood(pointId: string, foodId: string) {
   const turningOn = !point?.visibleFoodIds.includes(foodId)
   toggleFoodVisibility(pointId, foodId)
   points.value = listSavedPoints()
+  emit('pointsChanged')
   if (turningOn) {
     pushRecentFood(foodId)
     recentIds.value = listRecentFoods()
@@ -147,44 +180,26 @@ function removeRecent(id: string) {
 const seasonFor = (point: SavedPoint) => currentSeasonForLat(point.lat)
 const realmFor = (point: SavedPoint) => classifyRealm(point.lat, point.lng)
 const resultsFor = (point: SavedPoint) => foragableNow(props.items, point.lat, point.lng)
-// Narrow the in-season results by category (fruit, vegetable, …) — this also
-// gates what's drawn on the map (`mapMarkers` below), so switching category
-// here hides non-matching picks from the map too, same as before.
-const filteredFor = (point: SavedPoint) => {
-  const results = resultsFor(point)
-  return category.value === 'all' ? results : results.filter((it) => it.category === category.value)
-}
 
-// The dialog's own results: category-filtered, then narrowed further by the
+// The picker's own results: category-filtered, then narrowed further by the
 // free-text search (name or region) — the "autocomplete" for finding a food
 // to pick without scrolling a long list.
-const dialogResults = computed(() => {
+const pickerResults = computed(() => {
   if (!activePoint.value) return []
+  const results = resultsFor(activePoint.value)
+  const byCategory =
+    category.value === 'all' ? results : results.filter((it) => it.category === category.value)
   const q = foodQuery.value.trim().toLowerCase()
-  const base = filteredFor(activePoint.value)
   return q
-    ? base.filter((it) => it.name.toLowerCase().includes(q) || it.origin.region.toLowerCase().includes(q))
-    : base
+    ? byCategory.filter(
+        (it) => it.name.toLowerCase().includes(q) || it.origin.region.toLowerCase().includes(q),
+      )
+    : byCategory
 })
 // On mobile, only show the first few matches — search to narrow further
 // instead of scrolling a long list.
-const visibleResults = computed(() => {
-  if (!isMobile.value) return dialogResults.value
-  return dialogResults.value.slice(0, 3)
-})
-const hiddenResultCount = computed(() => dialogResults.value.length - visibleResults.value.length)
-
-// What actually renders on the map: only the foods explicitly picked on at
-// each point (of its filtered results), positioned at that point rather than
-// the food's own domestication origin.
-const mapMarkers = computed<MarkerEntry[]>(() =>
-  points.value.flatMap((point) =>
-    filteredFor(point)
-      .filter((item) => point.visibleFoodIds.includes(item.id))
-      .map((item) => ({ id: `${point.id}:${item.id}`, lat: point.lat, lng: point.lng, item })),
-  ),
-)
-watch(mapMarkers, (m) => emit('markers', m), { immediate: true })
+const visibleResults = computed(() => (isMobile.value ? pickerResults.value.slice(0, 3) : pickerResults.value))
+const hiddenResultCount = computed(() => pickerResults.value.length - visibleResults.value.length)
 
 // Fetch JSON with a hard timeout so a stalled or blocked request surfaces an
 // error instead of leaving the UI stuck on "Locating…".
@@ -303,20 +318,11 @@ const onChipThumbError = (e: Event) => {
       <p v-else-if="error" class="status err">{{ error }}</p>
     </header>
 
-    <p class="hint">
-      Search a city, use your location to look around, or tap the map to drop a point, then pick
-      what to mark there. Foods are matched to your region (by biogeographic realm) and the
-      current season — a starting point for what to look for, not a guarantee it grows at your
-      exact spot.
-    </p>
-  </aside>
-
-  <!-- Opens right after a point is created (tap or city search), with the map
-       already centered on it behind this — replaces the old pan-then-scroll
-       flow. There's no saved-points list to come back to afterwards. -->
-  <div v-if="activePoint" class="food-dialog-backdrop" @click.self="closeDialog">
-    <div class="food-dialog" role="dialog" aria-label="Pick foods to save here">
-      <div class="row">
+    <!-- The food picker: shown inline, right in this panel, for whichever
+         point is active — not a separate list of saved points, and not a
+         popup dialog either, so it's never easy to miss. -->
+    <div v-if="activePoint" class="food-picker">
+      <div class="row picker-head">
         <div class="point-title">
           <strong>{{ activePoint.label }}</strong>
           <span class="point-meta">
@@ -324,7 +330,7 @@ const onChipThumbError = (e: Event) => {
             {{ REALM_LABEL[realmFor(activePoint)] }}
           </span>
         </div>
-        <button class="close" aria-label="Done" @click="closeDialog"><Icon name="close" /></button>
+        <button class="close" aria-label="Done" @click="closePicker"><Icon name="close" /></button>
       </div>
 
       <div v-if="recentItems.length" class="recent">
@@ -353,17 +359,21 @@ const onChipThumbError = (e: Event) => {
         </div>
       </div>
 
-      <input
-        v-model="foodQuery"
-        class="food-search"
-        type="text"
-        placeholder="Search foods…"
-        aria-label="Search foods to pick"
-      />
-      <FilterChips :active="category" @change="category = $event" />
+      <div class="picker-controls">
+        <input
+          v-model="foodQuery"
+          class="food-search"
+          type="text"
+          placeholder="Search foods…"
+          aria-label="Search foods to pick"
+        />
+        <select v-model="category" class="type-select" aria-label="Filter by type">
+          <option v-for="opt in TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+        </select>
+      </div>
 
       <ul class="results">
-        <li v-if="dialogResults.length === 0" class="empty">
+        <li v-if="pickerResults.length === 0" class="empty">
           Nothing matches{{ category !== 'all' || foodQuery ? ' this search' : ' in season here' }} right now.
         </li>
         <li
@@ -405,10 +415,14 @@ const onChipThumbError = (e: Event) => {
       <p v-if="hiddenResultCount > 0" class="more-hint">
         {{ hiddenResultCount }} more match{{ hiddenResultCount === 1 ? '' : 'es' }} — search to narrow it down.
       </p>
-
-      <button type="button" class="done" @click="closeDialog">Done</button>
     </div>
-  </div>
+    <p v-else class="hint">
+      Search a city, use your location to look around, or tap the map to drop a point, then pick
+      what to mark there. Foods are matched to your region (by biogeographic realm) and the
+      current season — a starting point for what to look for, not a guarantee it grows at your
+      exact spot.
+    </p>
+  </aside>
 </template>
 
 <style scoped>
@@ -444,6 +458,10 @@ const onChipThumbError = (e: Event) => {
 .status.err { color: var(--warn-text); }
 .hint { padding: 16px; color: var(--text-faint); font-size: 13px; line-height: 1.5; }
 
+/* The food picker fills whatever's left of the panel once it appears, so its
+   own results list — not the panel as a whole — is what scrolls. */
+.food-picker { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.picker-head { padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); align-items: flex-start; }
 .point-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .point-title strong {
   font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -473,7 +491,19 @@ const onChipThumbError = (e: Event) => {
 }
 .recent-x:hover { color: var(--warn-text); }
 
-.results { list-style: none; margin: 0; padding: 4px 0; }
+.picker-controls { display: flex; gap: 8px; padding: 10px 16px 0; flex: none; }
+.food-search {
+  flex: 1; min-width: 0; padding: 9px 10px; font-size: 13px;
+  border: 1px solid var(--border-strong); border-radius: 8px;
+  background: var(--surface); color: var(--text);
+}
+.type-select {
+  flex: none; max-width: 40%; padding: 9px 8px; font-size: 13px;
+  border: 1px solid var(--border-strong); border-radius: 8px;
+  background: var(--surface); color: var(--text); cursor: pointer;
+}
+
+.results { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; flex: 1; }
 .empty { padding: 16px; color: var(--text-faint); text-align: center; font-size: 13px; }
 .result {
   display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 12px;
@@ -500,35 +530,9 @@ const onChipThumbError = (e: Event) => {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cat { flex: none; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+.more-hint { flex: none; padding: 6px 16px; font-size: 12px; color: var(--text-faint); }
 
 .picking-banner { display: none; }
-
-/* The food-picker dialog: a modal over the map (and the forage panel behind
-   it), so the freshly centered point stays visible while picking. */
-.food-dialog-backdrop {
-  position: fixed; inset: 0; z-index: 800;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex; align-items: center; justify-content: center; padding: 16px;
-}
-.food-dialog {
-  width: 360px; max-width: 100%; max-height: 80vh;
-  background: var(--surface); color: var(--text); border-radius: 16px;
-  box-shadow: 0 8px 24px var(--shadow-strong);
-  display: flex; flex-direction: column; overflow: hidden;
-}
-.food-dialog .row { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); align-items: flex-start; }
-.food-dialog .results { overflow-y: auto; flex: 1; }
-.food-search {
-  margin: 10px 16px 0; padding: 10px 12px; font-size: 14px;
-  border: 1px solid var(--border-strong); border-radius: 8px;
-  background: var(--surface); color: var(--text);
-}
-.food-dialog :deep(.chips-row) { margin: 10px 16px 0; }
-.more-hint { padding: 6px 16px 0; font-size: 12px; color: var(--text-faint); }
-.done {
-  flex: none; margin: 10px 16px 16px; padding: 10px; border: none; border-radius: 8px;
-  background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 600; cursor: pointer;
-}
 
 @media (max-width: 640px) {
   /* A floating dropdown over the map, same treatment as SearchView — see the
@@ -553,6 +557,5 @@ const onChipThumbError = (e: Event) => {
     border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
-  .food-dialog-backdrop { align-items: flex-start; padding-top: 64px; }
 }
 </style>
